@@ -100,7 +100,7 @@ class _GodDaggerProvider__Heater extends RefCounted:
 		self._electric_heater_provider = electric_heater_provider
 	
 	func _obtain() -> Heater:
-		return _example_module.provide_heater(_electric_heater_provider._obtain())
+		return _example_module.__provide_heater(_electric_heater_provider._obtain())
 
 
 class _GodDaggerProvider__Thermosiphon extends RefCounted:
@@ -129,7 +129,7 @@ class _GodDaggerProvider__Pump extends RefCounted:
 		self._thermosiphon_provider = thermosiphon_provider
 	
 	func _obtain() -> Pump:
-		return _example_module.provide_pump(_thermosiphon_provider._obtain())
+		return _example_module.__provide_pump(_thermosiphon_provider._obtain())
 
 
 class _GodDaggerProvider__CoffeeMaker extends RefCounted:

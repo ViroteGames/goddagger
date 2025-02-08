@@ -1,9 +1,9 @@
 class_name ExampleModule extends GodDaggerModule
 
 
-func provide_heater(electric_heater: ElectricHeater) -> Heater:
+func __provide_heater(electric_heater: ElectricHeater) -> Heater:
 	return electric_heater
 
 
-func provide_pump(thermosiphon: Thermosiphon) -> Pump:
+func __provide_pump(thermosiphon: Thermosiphon) -> Pump:
 	return thermosiphon
