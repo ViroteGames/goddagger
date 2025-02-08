@@ -12,6 +12,150 @@ static func _get_components() -> GodDaggerGeneratedComponents:
 	return _generated_components
 
 
+static func _populate_graph_by_parsing_object_constructor_arguments(
+	components_to_objects_graphs: Dictionary,
+	component_class_name: String,
+	object_class_name: String,
+	constructor_arguments: Array[Dictionary],
+) -> void:
+	
+	for constructor_argument_index in constructor_arguments.size():
+		var constructor_argument: Dictionary = \
+			constructor_arguments[constructor_argument_index]
+		
+		var constructor_argument_class: String = \
+			constructor_argument[GodDaggerConstants.KEY_ARGUMENT_CLASS_NAME]
+		
+		var must_check_if_object_is_scoped := constructor_argument_index == 0
+		
+		if must_check_if_object_is_scoped:
+			var is_constructor_argument_class_a_scope := GodDaggerBaseResolver \
+				._is_subclass_of_given_class(
+					constructor_argument_class,
+					GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME,
+				)
+			
+			if is_constructor_argument_class_a_scope:
+				# TODO this object is scoped! handle this
+				continue
+		
+		# TODO also a good idea to protect from these instances being any GodDagger type
+		#   accidentally, such as components, modules or extra scopes
+		
+		components_to_objects_graphs[component_class_name] \
+			.declare_graph_vertex(constructor_argument_class)
+		components_to_objects_graphs[component_class_name] \
+			.declare_vertices_link(object_class_name, constructor_argument_class)
+		
+		var dependency_class := GodDaggerObjectResolver \
+			._resolve_object_class(constructor_argument_class)
+		var dependency_file_path := dependency_class.get_resolved_file_path()
+		
+		if not GodDaggerFileUtils._is_file_an_interface(dependency_file_path):
+			_populate_graph_by_parsing_object_constructor(
+				components_to_objects_graphs,
+				component_class_name,
+				constructor_argument_class,
+			)
+
+
+static func _populate_graph_by_parsing_object_constructor(
+	components_to_objects_graphs: Dictionary,
+	component_class_name: String,
+	object_class_name: String,
+) -> void:
+	
+	var object_class := GodDaggerObjectResolver._resolve_object_class(object_class_name)
+	
+	if components_to_objects_graphs[component_class_name].has_graph_vertex(object_class):
+		# No need to populate again, this object_class' dependencies have already been processed.
+		return
+	
+	var resolved_file_path := object_class.get_resolved_file_path()
+	
+	var error_message := "Could not parse object constructor for '%s'" % [
+		object_class_name, resolved_file_path,
+	]
+	
+	assert(
+		resolved_file_path != null and not resolved_file_path.is_empty(),
+		"%s. (at resolve step)" % error_message,
+	)
+	
+	if GodDaggerFileUtils._is_file_an_interface(resolved_file_path):
+		return
+	
+	error_message += " @%s." % resolved_file_path
+	
+	var cloned_file_name := object_class_name.to_snake_case()
+	
+	var cloned_object_script := GodDaggerFileUtils \
+		._clone_script_into_generated_directory_renaming_class_name_and_constructor(
+			object_class_name,
+			resolved_file_path,
+			cloned_file_name,
+		)
+	
+	assert(
+		cloned_object_script,
+		"%s (at clone + constructor rename step)" % error_message,
+	)
+	
+	var cloned_file_path := GodDaggerFileUtils._get_path_for_generated_script(cloned_file_name)
+	
+	var loaded_script: Object = load(cloned_file_path).new()
+	var methods := loaded_script.get_method_list()
+	
+	for method in methods:
+		var method_name: String = method[GodDaggerConstants.KEY_METHOD_NAME]
+		
+		if method_name == GodDaggerConstants.RENAMED_CONSTRUCTOR_NAME:
+			var constructor_arguments: Array[Dictionary] = \
+				method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
+			
+			_populate_graph_by_parsing_object_constructor_arguments(
+				components_to_objects_graphs,
+				component_class_name,
+				object_class_name,
+				constructor_arguments,
+			)
+
+
+static func _populate_graphs_by_parsing_component_property(
+	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
+	components_to_modules_graph: GodDaggerGraph,
+	components_to_objects_graphs: Dictionary,
+	component_class_name: String,
+	property: Dictionary,
+) -> void:
+	
+	var property_name: String = property[GodDaggerConstants.KEY_PROPERTY_NAME]
+	var property_class: StringName = property[GodDaggerConstants.KEY_PROPERTY_CLASS_NAME]
+	
+	if property_name.begins_with(GodDaggerConstants.DECLARED_INJECTED_PROPERTY_PREFIX):
+		var is_property_class_a_module := GodDaggerBaseResolver \
+			._resolved_classes_contains_given_class(module_classes, property_class)
+		
+		if is_property_class_a_module:
+			components_to_modules_graph.declare_vertices_link(
+				component_class_name, property_class,
+			)
+			
+			# TODO parse objects from this module into `components_to_objects_graphs`!
+		else:
+			# TODO good idea to protect against other GodDagger objects being passed here
+			#   unintentionally e.g., components, scopes, etc.
+			
+			components_to_objects_graphs[component_class_name] \
+				.declare_graph_vertex(property_class)
+			
+			_populate_graph_by_parsing_object_constructor(
+				components_to_objects_graphs,
+				component_class_name,
+				property_class,
+			)
+
+
 static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	if not GodDaggerFileUtils._clear_generated_files():
 		return false
@@ -21,42 +165,6 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	
 	var components_to_modules_graph := GodDaggerGraph.new()
 	var components_to_objects_graphs: Dictionary = {}
-	
-	var populate_graphs_by_parsing_object_constructor = func (
-		component_class_name: String,
-		object_class_name: String,
-	) -> void:
-		
-		var object_class := GodDaggerObjectResolver._resolve_object_class(object_class_name)
-		var resolved_file_path := object_class.get_resolved_file_path()
-		
-		# TODO parse constructor declaration straight from the `resolved_file_path`. If no
-		#   constructor is found, we now it has no-arguments constructor and the object is unscoped.
-	
-	var populate_graphs_by_parsing_component_property = func (
-		component_class_name: String,
-		property: Dictionary,
-	) -> void:
-		
-		var property_name: String = property["name"]
-		var property_class: StringName = property["class_name"]
-		
-		if property_name.begins_with(GodDaggerConstants.DECLARED_INJECTED_PROPERTY_PREFIX):
-			var is_property_class_a_module := GodDaggerBaseResolver \
-				._resolved_classes_contains_given_class(module_classes, property_class)
-			
-			if is_property_class_a_module:
-				components_to_modules_graph.declare_vertices_link(
-					component_class_name, property_class,
-				)
-				
-				# TODO parse objects from this module into `components_to_objects_graphs`!
-			else:
-				components_to_objects_graphs[component_class_name] \
-					.declare_graph_vertex(property_class)
-				
-				populate_graphs_by_parsing_object_constructor \
-					.call(component_class_name, property_class)
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
@@ -75,7 +183,13 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 		var properties := loaded_script.get_property_list()
 		
 		for property in properties:
-			populate_graphs_by_parsing_component_property.call(resolved_class_name, property)
+			_populate_graphs_by_parsing_component_property(
+				module_classes,
+				components_to_modules_graph,
+				components_to_objects_graphs,
+				resolved_class_name,
+				property,
+			)
 	
 	
 	return GodDaggerFileUtils._generate_script_with_contents(

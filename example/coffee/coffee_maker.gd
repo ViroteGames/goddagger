@@ -13,7 +13,7 @@ func _init(heater: Heater, pump: Pump) -> void:
 func make_coffee() -> Coffee:
 	print("Making coffee using heater: %s and pump: %s..." % [_heater, _pump])
 	return Coffee.new()
-	
+
 
 func _to_string() -> String:
 	return "CoffeeMaker"

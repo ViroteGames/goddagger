@@ -7,13 +7,21 @@ const GENERATED_FOLDER_NAME := "generated"
 const GENERATED_PATH := GODDAGGER_PATH + "/" + GENERATED_FOLDER_NAME
 
 
+static func _is_file_an_interface(absolute_file_path: String) -> bool:
+	return absolute_file_path.ends_with(GodDaggerConstants.EXPECTED_INTERFACE_FILE_FORMAT)
+
+
 static func _get_components_file_name() -> String:
 	return "%s/_goddagger_components.gd" % [GENERATED_PATH]
 
 
+static func _get_path_for_generated_script(file_name: String) -> String:
+	return "%s/%s.gd" % [GENERATED_PATH, file_name]
+
+
 static func _generate_script_with_contents(file_name: String, contents: String) -> bool:
 	if _generated_directory_exists():
-		var file_path := "%s/%s.gd" % [GENERATED_PATH, file_name]
+		var file_path := _get_path_for_generated_script(file_name)
 		print("Generating file %s..." % file_path)
 		var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
 		file.store_string(contents)
@@ -61,6 +69,46 @@ static func _clear_generated_files() -> bool:
 		"Couldn't clear dedicated folder for generated scripts at %s." % [GENERATED_PATH],
 	)
 	return clear_successful
+
+
+static func _read_file_lines(absolute_file_path: String) -> PackedStringArray:
+	var file := FileAccess.open(absolute_file_path, FileAccess.READ)
+	var file_lines := file.get_as_text().strip_edges().split("\n", false)
+	file.close()
+	return file_lines
+
+
+static func _clone_script_into_generated_directory_renaming_class_name_and_constructor(
+	object_class_name: String,
+	absolute_file_path: String,
+	cloned_file_name: String,
+) -> bool:
+	
+	var file_lines := _read_file_lines(absolute_file_path)
+	
+	for file_line_index in file_lines.size():
+		var class_name_pattern := "%s %s" % [
+			GodDaggerConstants.KEYWORD_CLASS_NAME,
+			object_class_name,
+		]
+		var renamed_class_name_pattern := "%s %s%s" % [
+			GodDaggerConstants.KEYWORD_CLASS_NAME,
+			GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX,
+			object_class_name,
+		]
+		
+		if file_lines[file_line_index].contains(class_name_pattern):
+			file_lines[file_line_index] = file_lines[file_line_index] \
+				.replace(class_name_pattern, renamed_class_name_pattern)
+		
+		var regular_constructor_pattern := "%s(" % GodDaggerConstants.CONSTRUCTOR_NAME
+		var renamed_constructor_pattern := "%s(" % GodDaggerConstants.RENAMED_CONSTRUCTOR_NAME
+		
+		if file_lines[file_line_index].contains(regular_constructor_pattern):
+			file_lines[file_line_index] = file_lines[file_line_index] \
+				.replace(regular_constructor_pattern, renamed_constructor_pattern)
+		
+	return _generate_script_with_contents(cloned_file_name, "\n".join(file_lines))
 
 
 static func _iterate_through_directory_recursively_and_do(
