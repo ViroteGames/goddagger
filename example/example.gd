@@ -1,11 +1,16 @@
-class_name Example extends Node
+class_name Example extends GodDaggerEntryPoint
 
 
-var _coffee_maker: CoffeeMaker
+@export_storage var _coffee_maker: CoffeeMaker
+
+
+func _declared_component_name() -> String:
+	return "ExampleComponent"
 
 
 func _init() -> void:
-	_coffee_maker = GodDagger__ExampleComponent.create().get_coffee_maker()
+	super._init()
+	_coffee_maker = _get_component().get_coffee_maker()
 
 
 func _ready() -> void:

@@ -5,7 +5,7 @@ var _heater: Heater
 var _pump: Pump
 
 
-@export_storage var __constructor_injected
+@export_storage var __constructor_injected__
 func _init(heater: Heater, pump: Pump) -> void:
 	self._heater = heater
 	self._pump = pump
