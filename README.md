@@ -59,6 +59,7 @@ func __provide_pump(thermosiphon: Thermosiphon) -> Pump:
 
 For example, the module above declares that objects depending on `Heater` should be provided `ElectricHeater` instances, while if they depend on `Pump`, they will be provided with `Thermosiphon` instances.
 
+In your provider methods or in your object constructors (regular `_init(...)` functions), you can optionally declare an instance with a subtype of `GodDaggerScope` e.g., `GodDaggerScope.SINGLETON` or your own defined scope, as *the first parameter*. That will apply the given scope to the return type (e.g., `Heater` or `Pump` above). If no scope is provided, then the return type will be unscoped.
 
 ### Let GodDagger work out its magic
 
