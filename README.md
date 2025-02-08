@@ -26,9 +26,9 @@ var __example_module: ExampleModule
 var __coffee_maker: CoffeeMaker
 ```
 
-By making your script inherit from `GodDaggerComponent`, you're informing the plugin that this is your component. You need to have exactly one script for the GodDagger component, otherwise the plugin will not let you build your project (and it will inform you about this situation with an informative error message).
+By making your script inherit from `GodDaggerComponent`, you're informing the plugin that this is your component. You need to have at least one GodDagger component script, otherwise the plugin will not let you build your project (and it will inform you about this situation with an informative error message).
 
-In your component, you must declare which objects you'd like to expose to consumers (regular `GDScript` files).
+In your component(s), you must declare which objects you'd like to expose to consumers (regular `GDScript` files).
 
 Those are declared directly by defining a variable with a name starting with the `__` prefix as well as its type (the script's `class_name`) e.g., `__coffee_maker: CoffeeMaker`.
 

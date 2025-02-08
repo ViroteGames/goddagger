@@ -7,8 +7,8 @@ const GENERATED_FOLDER_NAME := "generated"
 const GENERATED_PATH := GODDAGGER_PATH + "/" + GENERATED_FOLDER_NAME
 
 
-static func _get_component_file_name(component_name: String) -> String:
-	return "%s/_goddagger__%s.gd" % [GENERATED_PATH, component_name.to_snake_case()]
+static func _get_components_file_name() -> String:
+	return "%s/_goddagger_components.gd" % [GENERATED_PATH]
 
 
 static func _generate_script_with_contents(file_name: String, contents: String) -> bool:
