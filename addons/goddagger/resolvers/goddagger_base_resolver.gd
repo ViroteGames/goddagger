@@ -2,23 +2,24 @@ class_name GodDaggerBaseResolver extends RefCounted
 
 
 static func _resolve_classes_of_type(type_name: String) -> Array[ResolvedClass]:
+	return _do_resolve_classes(type_name, ResolutionType.CLASSES)
+
+
+static func _resolve_subclasses_of_type(type_name: String) -> Array[ResolvedClass]:
+	return _do_resolve_classes(type_name, ResolutionType.SUBCLASSES)
+
+
+static func _do_resolve_classes(
+	type_name: String,
+	resolution_type: ResolutionType,
+) -> Array[ResolvedClass]:
 	var resolved_classes: Array[ResolvedClass] = []
 	var corresponding_prefix_to_avoid: String
 	
-	match type_name:
-		GodDaggerConstants.BASE_GODDAGGER_COMPONENT_NAME:
-			corresponding_prefix_to_avoid = GodDaggerConstants.GENERATED_GODDAGGER_COMPONENT_PREFIX
-		GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME:
-			pass
-		_:
-			assert(
-				false,
-				"GodDagger BUG @GodDaggerBaseResolver._resolve_classes_of_type(). " + 
-				"This function received an invalid type: '%s'!" % type_name
-			)
-			return resolved_classes
+	if type_name == GodDaggerConstants.BASE_GODDAGGER_COMPONENT_NAME:
+		corresponding_prefix_to_avoid = GodDaggerConstants.GENERATED_GODDAGGER_COMPONENT_PREFIX
 	
-	var resolve_component_class_script := func (absolute_file_path: String) -> void:
+	var resolve_class_script := func (absolute_file_path: String) -> void:
 		if not absolute_file_path.ends_with(".gd"):
 			return
 		
@@ -26,27 +27,38 @@ static func _resolve_classes_of_type(type_name: String) -> Array[ResolvedClass]:
 		var file_contents := file.get_as_text().strip_edges().split("\n", false)
 		var first_line := file_contents[0]
 		
-		var is_component_class := first_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME) \
-			and first_line.ends_with(type_name)
+		var is_of_expected_class := first_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME)
+		
+		match resolution_type:
+			ResolutionType.CLASSES:
+				is_of_expected_class = is_of_expected_class and first_line \
+					.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME) \
+					.begins_with(type_name)
+			ResolutionType.SUBCLASSES:
+				is_of_expected_class = is_of_expected_class and first_line.ends_with(type_name)
 		
 		if corresponding_prefix_to_avoid != null:
-			is_component_class = is_component_class \
+			is_of_expected_class = is_of_expected_class \
 				and not first_line.contains(corresponding_prefix_to_avoid)
 		
-		if is_component_class:
-			var suffix_to_trim := "%s %s" % [
-				GodDaggerConstants.KEYWORD_EXTENDS,
-				type_name,
-			]
-			resolved_classes.append(
-				ResolvedClass.new(
-					first_line.trim_prefix(GodDaggerConstants.KEYWORD_CLASS_NAME) \
-						.trim_suffix(suffix_to_trim).strip_edges(),
-					absolute_file_path,
-				)
-			)
+		if is_of_expected_class:
+			match resolution_type:
+				ResolutionType.CLASSES:
+					resolved_classes.append(ResolvedClass.new(type_name, absolute_file_path))
+				ResolutionType.SUBCLASSES:
+					var suffix_to_trim := "%s %s" % [
+						GodDaggerConstants.KEYWORD_EXTENDS,
+						type_name,
+					]
+					resolved_classes.append(
+						ResolvedClass.new(
+							first_line.trim_prefix(GodDaggerConstants.KEYWORD_CLASS_NAME) \
+								.trim_suffix(suffix_to_trim).strip_edges(),
+							absolute_file_path,
+						)
+					)
 	
-	GodDaggerFileUtils._iterate_through_directory_recursively_and_do(resolve_component_class_script)
+	GodDaggerFileUtils._iterate_through_directory_recursively_and_do(resolve_class_script)
 	
 	return resolved_classes
 
@@ -63,6 +75,12 @@ static func _resolved_classes_contains_given_class(
 			return true
 	
 	return false
+
+
+enum ResolutionType {
+	CLASSES,
+	SUBCLASSES,
+}
 
 
 class ResolvedClass extends RefCounted:
