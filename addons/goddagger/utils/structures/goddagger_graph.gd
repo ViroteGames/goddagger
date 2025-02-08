@@ -2,10 +2,19 @@ class_name GodDaggerGraph extends RefCounted
 
 
 var _vertex_set: Array[GraphVertex] = []
+var _vertex_lookup_table: Dictionary = {}
 
 
-func declare_graph_vertex(vertex: GraphVertex) -> void:
+func declare_graph_vertex(value: Variant) -> void:
+	var vertex := GraphVertex.new(value)
+	_vertex_lookup_table[value] = vertex
 	_add_if_possible(vertex, _vertex_set)
+
+
+func declare_vertices_link(from_vertex_value: Variant, to_vertex_value: Variant) -> void:
+	var from_vertex: GraphVertex = _vertex_lookup_table[from_vertex_value]
+	var to_vertex: GraphVertex = _vertex_lookup_table[to_vertex_value]
+	from_vertex._add_edge_towards(to_vertex)
 
 
 func get_vertex_set() -> Array[GraphVertex]:
@@ -48,7 +57,7 @@ class GraphVertex extends RefCounted:
 		self._value = value
 		_next_id += 1
 	
-	func add_edge_towards(vertex: GraphVertex) -> void:
+	func _add_edge_towards(vertex: GraphVertex) -> void:
 		GodDaggerGraph._add_if_possible(vertex, self._outgoing_vertices)
 		GodDaggerGraph._add_if_possible(self, vertex._incoming_vertices)
 	

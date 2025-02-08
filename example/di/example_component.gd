@@ -1,5 +1,5 @@
 class_name ExampleComponent extends GodDaggerComponent
 
 
-var __example_module: ExampleModule
-var __coffee_maker: CoffeeMaker
+var __injected_example_module: ExampleModule
+var __injected_coffee_maker: CoffeeMaker

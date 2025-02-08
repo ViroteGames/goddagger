@@ -6,7 +6,7 @@ static var _generated_components: GodDaggerGeneratedComponents
 
 static func inject(target: Object) -> void:
 	var generated_components: GodDaggerGeneratedComponents = _get_components()
-	target["__coffee_maker"] = generated_components.get_coffee_maker()
+	target["__injected_coffee_maker"] = generated_components.get_coffee_maker()
 
 
 static func _get_components() -> GodDaggerGeneratedComponents:
@@ -21,7 +21,54 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	if not GodDaggerFileUtils._clear_generated_files():
 		return false
 	
-	var component_names := GodDaggerComponentResolver._resolve_component_names()
+	var component_classes := GodDaggerComponentResolver._resolve_component_classes()
+	var module_classes := GodDaggerModuleResolver._resolve_module_classes()
+	
+	var components_to_modules_graph := GodDaggerGraph.new()
+	var components_to_objects_graphs: Dictionary = {}
+	
+	for module_class in module_classes:
+		var resolved_class_name := module_class.get_resolved_class_name()
+		var resolved_file_path := module_class.get_resolved_file_path()
+		print("RESOLVED MODULE: %s @%s" % [resolved_class_name, resolved_file_path])
+		
+		components_to_modules_graph.declare_graph_vertex(resolved_class_name)
+	
+	for component_class in component_classes:
+		var resolved_class_name := component_class.get_resolved_class_name()
+		var resolved_file_path := component_class.get_resolved_file_path()
+		print("RESOLVED COMPONENT: %s @%s" % [resolved_class_name, resolved_file_path])
+		
+		components_to_modules_graph.declare_graph_vertex(resolved_class_name)
+		components_to_objects_graphs[resolved_class_name] = GodDaggerGraph.new()
+		
+		var loaded_script: GodDaggerComponent = load(resolved_file_path).new()
+		var properties := loaded_script.get_property_list()
+		
+		for property in properties:
+			var property_name: String = property["name"]
+			var property_class: StringName = property["class_name"]
+			
+			if property_name.begins_with(GodDaggerConstants.DECLARED_INJECTED_PROPERTY_PREFIX):
+				print("\\_ HAS INJECTED PROPERTY: %s OF CLASS %s" % [
+					property_name, property_class,
+				])
+				var is_property_class_a_module := GodDaggerBaseResolver \
+					._resolved_classes_contains_given_class(module_classes, property_class)
+				
+				if is_property_class_a_module:
+					components_to_modules_graph.declare_vertices_link(
+						resolved_class_name, property_class,
+					)
+					
+					print("    \\_ %s IS A MODULE!" % property_name)
+					# TODO parse objects from this module into this component's 
+					#  `components_to_objects_graphs` graph!
+				else:
+					components_to_objects_graphs[resolved_class_name] \
+						.declare_graph_vertex(property_class)
+					print("    \\_ %s IS AN OBJECT!" % property_name)
+	
 	
 	return GodDaggerFileUtils._generate_script_with_contents(
 		"_goddagger_components",
