@@ -27,13 +27,13 @@ static func _generate_script_with_contents(file_name: String, contents: String) 
 static func _generated_directory_exists() -> bool:
 	var directory := DirAccess.open(GODDAGGER_PATH)
 	if not directory.dir_exists(GENERATED_FOLDER_NAME):
-		if directory.make_dir(GENERATED_FOLDER_NAME) != OK:
-			assert(
-				false,
-				"GodDagger couldn't create dedicated folder for generated scripts at %s/%s." \
-					% [GODDAGGER_PATH, GENERATED_FOLDER_NAME]
-			)
-			return false
+		var directory_created := directory.make_dir(GENERATED_FOLDER_NAME) == OK
+		assert(
+			directory_created,
+			"GodDagger couldn't create dedicated folder for generated scripts at %s/%s." \
+				% [GODDAGGER_PATH, GENERATED_FOLDER_NAME]
+		)
+		return directory_created
 	
 	return true
 
@@ -54,14 +54,13 @@ static func _clear_generated_files() -> bool:
 			DirAccess.remove_absolute(absolute_file_path),
 	)
 	
-	if DirAccess.remove_absolute(GENERATED_PATH) == OK:
-		return true
+	var clear_successful := DirAccess.remove_absolute(GENERATED_PATH) == OK
 	
 	assert(
-		false,
+		clear_successful,
 		"Couldn't clear dedicated folder for generated scripts at %s." % [GENERATED_PATH],
 	)
-	return false
+	return clear_successful
 
 
 static func _iterate_through_directory_recursively_and_do(
