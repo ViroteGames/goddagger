@@ -105,16 +105,16 @@ static func _do_iterate_through_directory_recursively_and_do(
 	absolute_directory_path: String,
 	operation_for_each_file: Callable,
 ) -> void:
-		var directory := DirAccess.open(absolute_directory_path)
-		if directory == null:
-			return
-		
-		_do_iterate_through_directory_and_do(
-			absolute_directory_path,
-			directory,
-			func (nested_absolute_directory_path: String) -> void:
-				_do_iterate_through_directory_recursively_and_do.call(
-					nested_absolute_directory_path, operation_for_each_file,
-				),
-			operation_for_each_file,
-		)
+	var directory := DirAccess.open(absolute_directory_path)
+	if directory == null:
+		return
+	
+	_do_iterate_through_directory_and_do(
+		absolute_directory_path,
+		directory,
+		func (nested_absolute_directory_path: String) -> void:
+			_do_iterate_through_directory_recursively_and_do.call(
+				nested_absolute_directory_path, operation_for_each_file,
+			),
+		operation_for_each_file,
+	)
