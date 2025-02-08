@@ -11,5 +11,4 @@ func _apply_changes() -> void:
 
 
 func _build() -> bool:
-	GodDagger._build_dependency_graph_by_parsing_project_files()
-	return true
+	return GodDagger._build_dependency_graph_by_parsing_project_files()
