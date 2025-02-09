@@ -30,7 +30,7 @@ static func _populate_component_objects_graph_by_parsing_arguments(
 		
 		if must_check_if_object_is_scoped:
 			var is_argument_class_a_scope := GodDaggerBaseResolver._is_subclass_of_given_class(
-				dependency_class, GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME,
+				dependency_class, GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME,
 			)
 			
 			if is_argument_class_a_scope:
@@ -238,7 +238,11 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 		var objects_graph: GodDaggerGraph = components_to_objects_graphs[component_name]
 		
 		for object in objects_graph.get_topological_order():
-			print("Object: %s" % object)
+			if objects_to_scopes_map.keys().has(object):
+				print("Object: %s (scoped to %s)" % [object, objects_to_scopes_map[object]])
+			
+			else:
+				print("Object: %s (unscoped)" % object)
 	
 	return GodDaggerFileUtils._generate_script_with_contents(
 		"_goddagger_components",
@@ -252,7 +256,7 @@ class _GodDaggerProvider__ElectricHeater extends RefCounted:
 		pass
 	
 	func _obtain() -> ElectricHeater:
-		return ElectricHeater.new()
+		return ElectricHeater.new(null)
 
 
 class _GodDaggerProvider__Heater extends RefCounted:

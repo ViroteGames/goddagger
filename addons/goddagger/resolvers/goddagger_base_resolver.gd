@@ -4,20 +4,22 @@ class_name GodDaggerBaseResolver extends RefCounted
 static func _parsed_line_resolves_to_expected_class(
 	resolution_type: ResolutionType,
 	expected_class_name: String,
-	first_line: String,
+	parsed_line: String,
 ) -> bool:
 	
-	var is_of_expected_class := first_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME) \
-		and not first_line.contains(GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX)
+	parsed_line = parsed_line.strip_edges()
+	
+	var is_of_expected_class := parsed_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME) \
+		and not parsed_line.contains(GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX)
 	
 	match resolution_type:
 		ResolutionType.CLASSES:
-			is_of_expected_class = is_of_expected_class and first_line \
+			is_of_expected_class = is_of_expected_class and parsed_line \
 				.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME) \
 				.begins_with(expected_class_name)
 		ResolutionType.SUBCLASSES:
 			is_of_expected_class = is_of_expected_class and \
-				first_line.ends_with(expected_class_name)
+				parsed_line.ends_with(expected_class_name)
 	
 	return is_of_expected_class
 
@@ -42,28 +44,28 @@ static func _do_resolve_classes(
 			return
 		
 		var file_lines := GodDaggerFileUtils._read_file_lines(absolute_file_path)
-		var first_line := file_lines[0]
 		
-		var is_of_expected_class := _parsed_line_resolves_to_expected_class(
-			resolution_type, type_name, first_line,
-		)
-		
-		if is_of_expected_class:
-			match resolution_type:
-				ResolutionType.CLASSES:
-					resolved_classes.append(ResolvedClass.new(type_name, absolute_file_path))
-				ResolutionType.SUBCLASSES:
-					var suffix_to_trim := "%s %s" % [
-						GodDaggerConstants.KEYWORD_EXTENDS,
-						type_name,
-					]
-					resolved_classes.append(
-						ResolvedClass.new(
-							first_line.trim_prefix(GodDaggerConstants.KEYWORD_CLASS_NAME) \
-								.trim_suffix(suffix_to_trim).strip_edges(),
-							absolute_file_path,
+		for parsed_line in file_lines:
+			var is_of_expected_class := _parsed_line_resolves_to_expected_class(
+				resolution_type, type_name, parsed_line,
+			)
+			
+			if is_of_expected_class:
+				match resolution_type:
+					ResolutionType.CLASSES:
+						resolved_classes.append(ResolvedClass.new(type_name, absolute_file_path))
+					ResolutionType.SUBCLASSES:
+						resolved_classes.append(
+							ResolvedClass.new(
+								parsed_line
+									.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME)
+									.trim_suffix( "%s %s" % [
+										GodDaggerConstants.KEYWORD_EXTENDS, type_name
+									])
+									.strip_edges(),
+								absolute_file_path,
+							)
 						)
-					)
 	
 	GodDaggerFileUtils._iterate_through_directory_recursively_and_do(resolve_class_script)
 	
