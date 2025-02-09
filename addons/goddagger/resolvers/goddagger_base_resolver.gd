@@ -1,6 +1,27 @@
 class_name GodDaggerBaseResolver extends RefCounted
 
 
+static func _parsed_line_resolves_to_expected_class(
+	resolution_type: ResolutionType,
+	expected_class_name: String,
+	first_line: String,
+) -> bool:
+	
+	var is_of_expected_class := first_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME) \
+		and not first_line.contains(GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX)
+	
+	match resolution_type:
+		ResolutionType.CLASSES:
+			is_of_expected_class = is_of_expected_class and first_line \
+				.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME) \
+				.begins_with(expected_class_name)
+		ResolutionType.SUBCLASSES:
+			is_of_expected_class = is_of_expected_class and \
+				first_line.ends_with(expected_class_name)
+	
+	return is_of_expected_class
+
+
 static func _resolve_classes_of_type(type_name: String) -> Array[ResolvedClass]:
 	return _do_resolve_classes(type_name, ResolutionType.CLASSES)
 
@@ -23,16 +44,9 @@ static func _do_resolve_classes(
 		var file_lines := GodDaggerFileUtils._read_file_lines(absolute_file_path)
 		var first_line := file_lines[0]
 		
-		var is_of_expected_class := first_line.begins_with(GodDaggerConstants.KEYWORD_CLASS_NAME) \
-			and not first_line.contains(GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX)
-		
-		match resolution_type:
-			ResolutionType.CLASSES:
-				is_of_expected_class = is_of_expected_class and first_line \
-					.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME) \
-					.begins_with(type_name)
-			ResolutionType.SUBCLASSES:
-				is_of_expected_class = is_of_expected_class and first_line.ends_with(type_name)
+		var is_of_expected_class := _parsed_line_resolves_to_expected_class(
+			resolution_type, type_name, first_line,
+		)
 		
 		if is_of_expected_class:
 			match resolution_type:
@@ -71,9 +85,17 @@ static func _resolved_classes_contains_given_class(
 
 
 static func _is_subclass_of_given_class(
-	subclass_name: String, given_class_name: String
+	subclass: GodDaggerBaseResolver.ResolvedClass,
+	given_class_name: String,
 ) -> bool:
-	return true
+	
+	var absolute_file_path := subclass.get_resolved_file_path()
+	var file_lines := GodDaggerFileUtils._read_file_lines(absolute_file_path)
+	var first_line := file_lines[0]
+	
+	return _parsed_line_resolves_to_expected_class(
+		ResolutionType.SUBCLASSES, given_class_name, first_line,
+	)
 
 
 enum ResolutionType {

@@ -12,7 +12,7 @@ static func _is_file_an_interface(absolute_file_path: String) -> bool:
 
 
 static func _get_components_file_name() -> String:
-	return "%s/_goddagger_components.gd" % [GENERATED_PATH]
+	return "%s/_goddagger_components.gd" % GENERATED_PATH
 
 
 static func _get_path_for_generated_script(file_name: String) -> String:
@@ -66,7 +66,7 @@ static func _clear_generated_files() -> bool:
 	
 	assert(
 		clear_successful,
-		"Couldn't clear dedicated folder for generated scripts at %s." % [GENERATED_PATH],
+		"Couldn't clear dedicated folder for generated scripts at %s." % GENERATED_PATH,
 	)
 	return clear_successful
 

@@ -7,6 +7,7 @@ const BASE_GODDAGGER_MODULE_NAME := "GodDaggerModule"
 const BASE_GODDAGGER_SCOPE_NAME := "GodDaggerScope"
 
 const DECLARED_INJECTED_PROPERTY_PREFIX := "__injected_"
+const DECLARED_PROVIDER_METHOD_PREFIX := "__provide_"
 
 const GENERATED_GODDAGGER_TOKEN_PREFIX := "_GodDagger__"
 
@@ -27,6 +28,7 @@ const KEY_PROPERTY_CLASS_NAME := "class_name"
 
 const KEY_METHOD_NAME := "name"
 const KEY_METHOD_ARGUMENTS := "args"
+const KEY_METHOD_RETURN := "return"
 
 const KEY_ARGUMENT_NAME := "name"
 const KEY_ARGUMENT_CLASS_NAME := "class_name"
