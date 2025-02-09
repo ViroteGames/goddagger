@@ -107,7 +107,8 @@ static func _clone_script_into_generated_directory_renaming_class_name_and_const
 		if file_lines[file_line_index].contains(regular_constructor_pattern):
 			file_lines[file_line_index] = file_lines[file_line_index] \
 				.replace(regular_constructor_pattern, renamed_constructor_pattern)
-		
+	
+	# TODO add the __goddagger_cloned_ prefix to names of cloned files.
 	return _generate_script_with_contents(cloned_file_name, "\n".join(file_lines))
 
 
