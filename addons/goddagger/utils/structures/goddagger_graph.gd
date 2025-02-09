@@ -29,12 +29,12 @@ func get_vertex_set() -> Array[GraphVertex]:
 	return _vertex_set
 
 
-func get_topological_order() -> Array[GraphVertex]:
-	var topological_order: Array[GraphVertex]
+func get_topological_order() -> Array[Variant]:
+	var topological_order: Array[Variant]
 	
 	var iterator := GodDaggerTopologicalOrderIterator.new(self)
 	while iterator.has_next():
-		topological_order.append(iterator.get_next())
+		topological_order.append(iterator.get_next().get_value())
 	
 	return topological_order
 
@@ -64,6 +64,9 @@ class GraphVertex extends RefCounted:
 		self._id = _next_id
 		self._value = value
 		_next_id += 1
+	
+	func get_value() -> Variant:
+		return _value
 	
 	func _add_edge_towards(vertex: GraphVertex) -> void:
 		GodDaggerGraph._add_if_possible(vertex, self._outgoing_vertices)

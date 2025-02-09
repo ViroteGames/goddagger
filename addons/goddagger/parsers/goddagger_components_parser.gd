@@ -14,6 +14,7 @@ static func _get_components() -> GodDaggerGeneratedComponents:
 
 static func _populate_component_objects_graph_by_parsing_arguments(
 	component_objects_graph: GodDaggerGraph,
+	objects_to_scopes_map: Dictionary,
 	object_class_name: String,
 	arguments: Array[Dictionary],
 ) -> void:
@@ -33,23 +34,24 @@ static func _populate_component_objects_graph_by_parsing_arguments(
 			)
 			
 			if is_argument_class_a_scope:
-				# TODO this object is scoped! handle this
+				objects_to_scopes_map[object_class_name] = argument_class
 				continue
 		
 		# TODO also a good idea to protect from these instances being any GodDagger type
 		#   accidentally, such as components, modules or extra scopes
 		
 		component_objects_graph.declare_graph_vertex(argument_class)
-		component_objects_graph.declare_vertices_link(object_class_name, argument_class)
+		component_objects_graph.declare_vertices_link(argument_class, object_class_name)
 		
 		if not GodDaggerFileUtils._is_file_an_interface(dependency_file_path):
 			_populate_component_objects_graph_by_parsing_object_constructor(
-				component_objects_graph, argument_class,
+				component_objects_graph, objects_to_scopes_map, argument_class,
 			)
 
 
 static func _populate_component_objects_graph_by_parsing_object_constructor(
 	component_objects_graph: GodDaggerGraph,
+	objects_to_scopes_map: Dictionary,
 	object_class_name: String,
 ) -> void:
 	
@@ -100,13 +102,15 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 				method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
 			
 			_populate_component_objects_graph_by_parsing_arguments(
-				component_objects_graph, object_class_name, constructor_arguments,
+				component_objects_graph, objects_to_scopes_map,
+				object_class_name, constructor_arguments,
 			)
 
 
 static func _populate_component_objects_graph_by_parsing_module_method(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_objects_graph: GodDaggerGraph,
+	objects_to_scopes_map: Dictionary,
 	module_class_name: String,
 	method: Dictionary,
 ) -> void:
@@ -124,13 +128,15 @@ static func _populate_component_objects_graph_by_parsing_module_method(
 			method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
 		
 		_populate_component_objects_graph_by_parsing_arguments(
-			component_objects_graph, provider_method_object_class, provider_method_arguments,
+			component_objects_graph, objects_to_scopes_map,
+			provider_method_object_class, provider_method_arguments,
 		)
 
 
 static func _populate_component_objects_graph_by_parsing_module(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_objects_graph: GodDaggerGraph,
+	objects_to_scopes_map: Dictionary,
 	module_class_name: String,
 ) -> void:
 	
@@ -145,6 +151,7 @@ static func _populate_component_objects_graph_by_parsing_module(
 				_populate_component_objects_graph_by_parsing_module_method(
 					module_classes,
 					component_objects_graph,
+					objects_to_scopes_map,
 					module_class_name,
 					method,
 				)
@@ -154,6 +161,7 @@ static func _populate_graphs_by_parsing_component_property(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	components_to_modules_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
+	objects_to_scopes_map: Dictionary,
 	component_class_name: String,
 	property: Dictionary,
 ) -> void:
@@ -167,14 +175,13 @@ static func _populate_graphs_by_parsing_component_property(
 		
 		if is_property_class_a_module:
 			components_to_modules_graph.declare_vertices_link(
-				component_class_name, property_class,
+				property_class, component_class_name,
 			)
 			
 			_populate_component_objects_graph_by_parsing_module(
-				module_classes, components_to_objects_graphs[component_class_name], property_class,
+				module_classes, components_to_objects_graphs[component_class_name],
+				objects_to_scopes_map, property_class,
 			)
-			
-			# TODO parse objects from this module into `components_to_objects_graphs`!
 		else:
 			# TODO good idea to protect against other GodDagger objects being passed here
 			#   unintentionally e.g., components, scopes, etc.
@@ -183,7 +190,8 @@ static func _populate_graphs_by_parsing_component_property(
 				.declare_graph_vertex(property_class)
 			
 			_populate_component_objects_graph_by_parsing_object_constructor(
-				components_to_objects_graphs[component_class_name], property_class,
+				components_to_objects_graphs[component_class_name],
+				objects_to_scopes_map, property_class,
 			)
 
 
@@ -196,6 +204,7 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	
 	var components_to_modules_graph := GodDaggerGraph.new()
 	var components_to_objects_graphs: Dictionary = {}
+	var objects_to_scopes_map: Dictionary = {}
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
@@ -218,10 +227,18 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 				module_classes,
 				components_to_modules_graph,
 				components_to_objects_graphs,
+				objects_to_scopes_map,
 				resolved_class_name,
 				property,
 			)
 	
+	for component_name in components_to_objects_graphs.keys():
+		print("Component '%s' has the following objects in topological order:" % component_name)
+		
+		var objects_graph: GodDaggerGraph = components_to_objects_graphs[component_name]
+		
+		for object in objects_graph.get_topological_order():
+			print("Object: %s" % object)
 	
 	return GodDaggerFileUtils._generate_script_with_contents(
 		"_goddagger_components",
