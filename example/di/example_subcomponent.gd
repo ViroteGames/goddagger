@@ -1,0 +1,4 @@
+class_name ExampleSubcomponent extends GodDaggerSubcomponent
+
+
+var __injected_example_submodule: ExampleSubmodule

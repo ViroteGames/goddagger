@@ -1,7 +1,7 @@
 class_name ElectricHeater extends Heater
 
 
-func _init(_scope: SingletonScope) -> void:
+func _init(__: GodDaggerComponentScope) -> void:
 	pass
 
 
