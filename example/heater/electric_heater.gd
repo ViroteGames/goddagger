@@ -2,7 +2,7 @@ class_name ElectricHeater extends Heater
 
 
 func _init(
-	__: GodDaggerComponentScope
+	__: RootScope,
 ) -> void:
 	pass
 

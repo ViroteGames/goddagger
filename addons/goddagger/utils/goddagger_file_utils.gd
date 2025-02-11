@@ -12,12 +12,17 @@ static func _is_file_an_interface(absolute_file_path: String) -> bool:
 
 
 static func _get_components_file_name() -> String:
-	return "%s/_goddagger_components.gd" % GENERATED_PATH
+	return "%s/%s%s.gd" % [
+		GENERATED_PATH,
+		GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
+		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
+	]
 
 
 static func _get_path_for_generated_script(file_name: String) -> String:
-	return "%s/%s.gd" % [GENERATED_PATH, file_name]
-
+	return "%s/%s%s.gd" % [
+		GENERATED_PATH, GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX, file_name,
+	]
 
 static func _generate_script_with_contents(file_name: String, contents: String) -> bool:
 	if _generated_directory_exists():
@@ -108,7 +113,6 @@ static func _clone_script_into_generated_directory_renaming_class_name_and_const
 			file_lines[file_line_index] = file_lines[file_line_index] \
 				.replace(regular_constructor_pattern, renamed_constructor_pattern)
 	
-	# TODO add the __goddagger_cloned_ prefix to names of cloned files.
 	return _generate_script_with_contents(cloned_file_name, "\n".join(file_lines))
 
 

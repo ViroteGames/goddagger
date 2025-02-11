@@ -11,3 +11,10 @@ static func _resolve_component_classes() -> Array[ResolvedClass]:
 	)
 	
 	return component_classes
+
+
+static func _resolve_subcomponent_classes() -> Array[ResolvedClass]:
+	var subcomponent_classes: Array[ResolvedClass] = \
+		_resolve_subclasses_of_type(GodDaggerConstants.BASE_GODDAGGER_SUBCOMPONENT_NAME)
+	
+	return subcomponent_classes

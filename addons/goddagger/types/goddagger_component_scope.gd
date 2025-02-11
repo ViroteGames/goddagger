@@ -1,1 +1,0 @@
-class_name GodDaggerComponentScope extends GodDaggerScope
