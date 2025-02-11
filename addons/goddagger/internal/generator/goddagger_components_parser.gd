@@ -271,8 +271,6 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
-		var resolved_file_path := module_class.get_resolved_file_path()
-		
 		components_to_modules_graph.declare_graph_vertex(resolved_class_name)
 	
 	for component_class in component_classes:
