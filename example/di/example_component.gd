@@ -1,8 +1,8 @@
 class_name ExampleComponent extends GodDaggerComponent
 
 
-func __scope(__: RootScope) -> void:
-	pass
+func __scope() -> RootScope:
+	return null
 
 
 var __injected_example_module: ExampleModule

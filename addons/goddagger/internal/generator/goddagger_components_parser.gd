@@ -53,7 +53,8 @@ static func _populate_component_objects_graph_by_parsing_arguments(
 		
 		if not GodDaggerFileUtils._is_file_an_interface(dependency_file_path):
 			_populate_component_objects_graph_by_parsing_object_constructor(
-				component_objects_graph, argument_class,
+				component_objects_graph,
+				argument_class,
 			)
 
 
@@ -109,7 +110,9 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 				method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
 			
 			_populate_component_objects_graph_by_parsing_arguments(
-				component_objects_graph, object_class_name, constructor_arguments,
+				component_objects_graph,
+				object_class_name,
+				constructor_arguments,
 			)
 
 
@@ -132,14 +135,16 @@ static func _populate_component_objects_graph_by_parsing_module_method(
 			method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
 		
 		_populate_component_objects_graph_by_parsing_arguments(
-			component_objects_graph, provider_method_object_class, provider_method_arguments,
+			component_objects_graph,
+			provider_method_object_class,
+			provider_method_arguments,
 		)
 
 
 static func _populate_component_objects_graph_by_parsing_module_property(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
-	components_to_modules_graph: GodDaggerGraph,
+	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
 	component_objects_graph: GodDaggerGraph,
 	module_class_name: String,
@@ -157,14 +162,23 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 			if subcomponent_class_name == property_class:
 				var resolved_file_path := subcomponent_class.get_resolved_file_path()
 				
-				components_to_modules_graph.declare_graph_vertex(subcomponent_class_name)
-				components_to_modules_graph.declare_vertices_link(
+				component_relationships_graph.declare_graph_vertex(subcomponent_class_name)
+				component_relationships_graph.declare_vertices_link(
 					subcomponent_class_name, module_class_name,
 				)
 				components_to_objects_graphs[subcomponent_class_name] = \
 					component_objects_graph.fork("%s's Object Graph" % subcomponent_class_name)
 				
 				var loaded_script: GodDaggerSubcomponent = load(resolved_file_path).new()
+				
+				var methods := loaded_script.get_method_list()
+				
+				_populate_component_objects_graph_scope_by_parsing_component_methods(
+					component_relationships_graph,
+					subcomponent_class_name,
+					methods,
+				)
+				
 				var properties := loaded_script.get_property_list()
 				
 				component_objects_graph.declare_graph_vertex(subcomponent_class_name)
@@ -176,7 +190,7 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 					_populate_graphs_by_parsing_component_property(
 						module_classes,
 						subcomponent_classes,
-						components_to_modules_graph,
+						component_relationships_graph,
 						components_to_objects_graphs,
 						subcomponent_class_name,
 						subcomponent_property,
@@ -186,7 +200,7 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 static func _populate_component_objects_graph_by_parsing_module(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
-	components_to_modules_graph: GodDaggerGraph,
+	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
 	component_objects_graph: GodDaggerGraph,
 	module_class_name: String,
@@ -212,7 +226,7 @@ static func _populate_component_objects_graph_by_parsing_module(
 				_populate_component_objects_graph_by_parsing_module_property(
 					module_classes,
 					subcomponent_classes,
-					components_to_modules_graph,
+					component_relationships_graph,
 					components_to_objects_graphs,
 					component_objects_graph,
 					module_class_name,
@@ -223,7 +237,7 @@ static func _populate_component_objects_graph_by_parsing_module(
 static func _populate_graphs_by_parsing_component_property(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
-	components_to_modules_graph: GodDaggerGraph,
+	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
 	component_class_name: String,
 	property: Dictionary,
@@ -237,13 +251,16 @@ static func _populate_graphs_by_parsing_component_property(
 			._resolved_classes_contains_given_class(module_classes, property_class)
 		
 		if is_property_class_a_module:
-			components_to_modules_graph.declare_vertices_link(
+			component_relationships_graph.declare_vertices_link(
 				property_class, component_class_name,
 			)
 			
 			_populate_component_objects_graph_by_parsing_module(
-				module_classes, subcomponent_classes, components_to_modules_graph,
-				components_to_objects_graphs, components_to_objects_graphs[component_class_name],
+				module_classes,
+				subcomponent_classes,
+				component_relationships_graph,
+				components_to_objects_graphs,
+				components_to_objects_graphs[component_class_name],
 				property_class,
 			)
 		else:
@@ -254,8 +271,73 @@ static func _populate_graphs_by_parsing_component_property(
 				.declare_graph_vertex(property_class)
 			
 			_populate_component_objects_graph_by_parsing_object_constructor(
-				components_to_objects_graphs[component_class_name], property_class,
+				components_to_objects_graphs[component_class_name],
+				property_class,
 			)
+
+
+static func _populate_component_objects_graph_scope_by_parsing_component_methods(
+	component_relationships_graph: GodDaggerGraph,
+	component_class_name: String,
+	methods: Array[Dictionary],
+) -> void:
+	
+	for method in methods:
+		var method_name: String = method[GodDaggerConstants.KEY_METHOD_NAME]
+		
+		if method_name == GodDaggerConstants.DECLARED_SCOPE_METHOD_NAME:
+			var component_scope = method[GodDaggerConstants.KEY_METHOD_RETURN] \
+				[GodDaggerConstants.KEY_PROPERTY_CLASS_NAME]
+			
+			var dependency_class := GodDaggerObjectResolver._resolve_object_class(component_scope)
+			var dependency_file_path := dependency_class.get_resolved_file_path()
+			
+			var is_method_return_class_a_scope := GodDaggerBaseResolver._is_subclass_of_given_class(
+				dependency_class, GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME,
+			)
+			
+			if is_method_return_class_a_scope:
+				var referenced_modules := component_relationships_graph \
+					.get_outgoing_vertices(component_class_name)
+				
+				for module_class_name in referenced_modules:
+					var referenced_ancestor_components := component_relationships_graph \
+						.get_outgoing_vertices(module_class_name)
+					
+					for ancestor_component_class_name in referenced_ancestor_components:
+						var ancestor_component_scope := component_relationships_graph \
+							.get_vertex_tag(
+								ancestor_component_class_name,
+								GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
+							)
+						
+						if ancestor_component_scope:
+							# One of this component's ancestor components is scoped. Is that scope
+							#  the same as the one being declared for this component?
+							if component_scope == ancestor_component_scope:
+								assert(
+									false,
+									""
+								)
+								return
+				
+				# No ancestor component has the same scope as the one being declared for this
+				#  component, so we are good to go with really assigning it to this component.
+				
+				component_relationships_graph.set_tag_to_vertex(
+					component_class_name,
+					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
+					component_scope,
+				)
+			else:
+					assert(
+						false,
+						"'%s':'%s' must return a subclass of '%s'!" % [
+							component_class_name,
+							GodDaggerConstants.DECLARED_SCOPE_METHOD_NAME,
+							GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME,
+						]
+					)
 
 
 static func _build_dependency_graph_by_parsing_project_files() -> bool:
@@ -266,32 +348,36 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	var subcomponent_classes := GodDaggerComponentResolver._resolve_subcomponent_classes()
 	var module_classes := GodDaggerModuleResolver._resolve_module_classes()
 	
-	var components_to_modules_graph := GodDaggerGraph.new("Boundaries Graph")
+	var component_relationships_graph := GodDaggerGraph.new("Boundaries Graph")
 	var components_to_objects_graphs: Dictionary = {}
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
-		components_to_modules_graph.declare_graph_vertex(resolved_class_name)
+		component_relationships_graph.declare_graph_vertex(resolved_class_name)
 	
 	for component_class in component_classes:
 		var resolved_class_name := component_class.get_resolved_class_name()
 		var resolved_file_path := component_class.get_resolved_file_path()
 		
-		components_to_modules_graph.declare_graph_vertex(resolved_class_name)
+		component_relationships_graph.declare_graph_vertex(resolved_class_name)
 		components_to_objects_graphs[resolved_class_name] = \
 			GodDaggerGraph.new("%s's Object Graph" % resolved_class_name)
 		
 		var loaded_script: GodDaggerComponent = load(resolved_file_path).new()
+		
+		var methods := loaded_script.get_method_list()
+		_populate_component_objects_graph_scope_by_parsing_component_methods(
+			component_relationships_graph,
+			resolved_class_name,
+			methods,
+		)
+		
 		var properties := loaded_script.get_property_list()
-		
-		# TODO parse this component's scope (if set) and pass this information down.
-		# Any subcomponents bound to this component will be assigned this scope (again, if set).
-		
 		for property in properties:
 			_populate_graphs_by_parsing_component_property(
 				module_classes,
 				subcomponent_classes,
-				components_to_modules_graph,
+				component_relationships_graph,
 				components_to_objects_graphs,
 				resolved_class_name,
 				property,
@@ -303,12 +389,41 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 		var objects_graph: GodDaggerGraph = components_to_objects_graphs[component_name]
 		
 		for object in objects_graph.get_topological_order():
-			var tags = objects_graph.get_vertex_tags(object)
+			if object == component_name:
+				continue
 			
-			if GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG in tags.keys():
-				print("Object: %s (scoped to %s)" % [
-					object, tags[GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG]
-				])
+			elif component_relationships_graph.has_graph_vertex(object):
+				var subcomponent_scope = component_relationships_graph.get_vertex_tag(
+					object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
+				)
+				
+				var component_scope = component_relationships_graph.get_vertex_tag(
+					component_name, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
+				)
+				
+				var scoped_to: String
+				if component_scope:
+					scoped_to = "scoped to %s:%s" % [component_name, component_scope]
+				else:
+					scoped_to = "scoped to %s" % component_name
+				
+				if subcomponent_scope:
+					print(
+						"Subcomponent: %s (defines %s scope, %s)" % [
+							object, subcomponent_scope, scoped_to
+						]
+					)
+				else:
+					print("Subcomponent: %s (%s)" % [object, scoped_to])
+				
+				continue
+			
+			var object_scope = objects_graph.get_vertex_tag(
+				object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
+			)
+			
+			if object_scope:
+				print("Object: %s (scoped to %s)" % [object, object_scope])
 			
 			else:
 				print("Object: %s (unscoped)" % object)

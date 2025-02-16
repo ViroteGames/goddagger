@@ -45,22 +45,32 @@ func declare_graph_vertex(value: Variant) -> void:
 		child.declare_graph_vertex(value)
 
 
-func declare_vertices_link(from_vertex_value: Variant, to_vertex_value: Variant) -> void:
-	var from_vertex: GraphVertex = _vertex_lookup_table[from_vertex_value]
-	var to_vertex: GraphVertex = _vertex_lookup_table[to_vertex_value]
-	from_vertex._add_edge_towards(to_vertex)
-	print("%s formed a link from %s to %s..." % [self._name, from_vertex_value, to_vertex_value])
+func declare_vertices_link(from_value: Variant, to_value: Variant) -> void:
+	if has_graph_vertex(from_value) and has_graph_vertex(to_value):
+		var from_vertex: GraphVertex = _vertex_lookup_table[from_value]
+		var to_vertex: GraphVertex = _vertex_lookup_table[to_value]
+		from_vertex._add_edge_towards(to_vertex)
+		print("%s formed a link from %s to %s..." % [self._name, from_value, to_value])
+		
+		for child in _children:
+			child.declare_vertices_link(from_value, to_value)
+
+
+func get_outgoing_vertices(value: Variant) -> Array[Variant]:
+	var outgoing_vertices: Array[Variant] = []
 	
-	for child in _children:
-		child.declare_vertices_link(from_vertex_value, to_vertex_value)
-
-
-func get_vertex_set() -> Array[GraphVertex]:
-	return _vertex_set
+	if not has_graph_vertex(value):
+		return outgoing_vertices
+	
+	var vertex: GraphVertex = _vertex_lookup_table[value]
+	for other_vertex in vertex.get_outgoing_vertices():
+		outgoing_vertices.append(other_vertex.get_value())
+	
+	return outgoing_vertices
 
 
 func get_topological_order() -> Array[Variant]:
-	var topological_order: Array[Variant]
+	var topological_order: Array[Variant] = []
 	
 	var iterator := GodDaggerTopologicalOrderIterator.new(self)
 	while iterator.has_next():
@@ -77,12 +87,18 @@ func set_tag_to_vertex(value: Variant, tag_name: String, tag_value: String) -> v
 		child.set_tag_to_vertex(value, tag_name, tag_value)
 
 
-func get_vertex_tags(value: Variant) -> Dictionary:
+func get_vertex_tag(value: Variant, tag_name: String) -> Variant:
 	if has_graph_vertex(value):
-		return _vertex_lookup_table[value].get_tags()
+		var tags: Dictionary = _vertex_lookup_table[value].get_tags()
+		
+		if tags.keys().has(tag_name):
+			return tags[tag_name]
 	
-	else:
-		return {}
+	return null
+
+
+func _get_vertex_set() -> Array[GraphVertex]:
+	return _vertex_set
 
 
 static func _add_if_possible(

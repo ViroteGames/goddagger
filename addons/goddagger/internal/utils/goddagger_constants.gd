@@ -11,6 +11,7 @@ const GODDAGGER_GRAPH_VERTEX_SCOPE_TAG := "scope"
 
 const DECLARED_INJECTED_PROPERTY_PREFIX := "__injected_"
 const DECLARED_PROVIDER_METHOD_PREFIX := "__provide_"
+const DECLARED_SCOPE_METHOD_NAME := "__scope"
 
 const GENERATED_GODDAGGER_TOKEN_PREFIX := "_GodDagger__"
 

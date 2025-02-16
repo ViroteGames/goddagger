@@ -11,7 +11,7 @@ var _current_vertex: GodDaggerGraph.GraphVertex
 func _init(graph: GodDaggerGraph) -> void:
 	self._graph = graph
 	
-	var vertex_set_size: int = graph.get_vertex_set().size()
+	var vertex_set_size: int = graph._get_vertex_set().size()
 	
 	self._queue = GodDaggerPriorityQueue.new(vertex_set_size)
 	self._remaining_vertices_count = vertex_set_size
@@ -44,7 +44,7 @@ func get_next() -> GodDaggerGraph.GraphVertex:
 func _count_incoming_degrees() -> Dictionary:
 	var incoming_vertices_degrees_map: Dictionary = {}
 	
-	for vertex in _graph.get_vertex_set():
+	for vertex in _graph._get_vertex_set():
 		var incoming_degree: int = 0
 		
 		for other_vertex in vertex.get_incoming_vertices():
