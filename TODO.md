@@ -5,6 +5,8 @@ Main features which I still plan to support (before getting into actual code gen
 	* Make checking of all current possible errors more robust, make them halt the build process returning `false` back from the root parser build call to the plugin's '_build()' method that halts execution.
 	* Extensively document everything implemented so far for easier future understanding.
 	* Before implementing support for the 'assisted injection', 'binding instances' and 'qualifier' features, experiment with visual feedback on the dependency graph parsing process (including display errors visually).
+* Component/Subcomponent Builders!
+* Binds annotation - simply as a shortcut to provision methods that generates code on behalf of the user.
 * Assisted injection - might be possible and simpler than in Dagger2, with factory classes being 100% generated for the user. The biggest challenge is how to let users annotate that certain constructor arguments are @assisted. The only viable solution I can think of right now is to let users optionally define a `GodDaggerAssistedInjection` argument indicating that the following arguments in the constructor are all assisted by the user.
 * Binding instances - I'll need to add Builder support to components first (for overriding module instances), otherwise this doesn't make sense. Which means adding Builder and the create() convenience method (that instantiates modules on behalf of the user). Then I can work on letting users bind instances to the graph.
 

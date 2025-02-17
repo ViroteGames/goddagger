@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://c37meqg20bkvu"]
+
+[node name="Module Details View" type="MarginContainer"]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Module Details Row" type="HFlowContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Module Name Label" type="Label" parent="VBoxContainer/Module Details Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ExampleModule"
+
+[node name="Module Filename Label" type="Label" parent="VBoxContainer/Module Details Row"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "di/example_module.gd"
+horizontal_alignment = 2
+justification_flags = 35
+
+[node name="CodeEdit" type="CodeEdit" parent="VBoxContainer"]
+layout_mode = 2
+text = "~ links to ExampleSubcomponent
+~ provisions the following:
+  ~ Heater depends on ElectricHeater
+  ~ Pump depends on Thermosiphon"
+editable = false
+selecting_enabled = false
+scroll_fit_content_height = true
+
+[node name="Parse Error View" type="HFlowContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Pase Error Description Label" type="Label" parent="VBoxContainer/Parse Error View"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Parse error: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean tempor semper enim. Nulla facilisi. Ut pretium magna et condimentum molestie. Aliquam tempus vel leo sit amet pretium."
+autowrap_mode = 3
+justification_flags = 35

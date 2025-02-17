@@ -1,7 +1,7 @@
 class_name GodDaggerConstants extends RefCounted
 
 
-# GodDagger types and type prefixes
+# GodDagger-related constants
 const BASE_GODDAGGER_COMPONENT_NAME := "GodDaggerComponent"
 const BASE_GODDAGGER_SUBCOMPONENT_NAME := "GodDaggerSubcomponent"
 const BASE_GODDAGGER_MODULE_NAME := "GodDaggerModule"
@@ -22,8 +22,11 @@ const EXPECTED_INTERFACE_FILE_FORMAT := ".interface.gd"
 
 const GODDAGGER_GENERATED_COMPONENTS_FILE_NAME := "generated_components"
 
+const MAIN_PANEL_TITLE := "Graph"
+const MAIN_PANEL_SCENE_PATH := "res://addons/goddagger/internal/view/main_panel.tscn"
 
-# Godot types, keywords, method names, etc.
+
+# Godot Engine or GDScript-related constants
 const KEYWORD_CLASS_NAME := "class_name"
 const KEYWORD_EXTENDS := "extends"
 
