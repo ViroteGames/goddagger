@@ -97,8 +97,80 @@ func get_vertex_tag(value: Variant, tag_name: String) -> Variant:
 	return null
 
 
+func serialize() -> String:
+	return """{
+	\"name\": \"%s\",
+	\"vertices\": [
+		%s
+	]
+}""" % [
+	self._name,
+"""{
+			\"vertex_name\": \"%s\",
+			\"tags\": [
+				%s
+			],
+			\"outgoing_vertices\": [
+				%s
+			]
+		},
+		""".repeat(_get_vertex_set().size()) % _flatten_array(
+			_get_vertex_set().map(
+				func (vertex: GraphVertex) -> Array: return [
+					vertex.get_value(),
+"""{\"%s\": \"%s\",},
+				""".repeat(vertex.get_tags().keys().size()) % _flatten_array(
+					vertex.get_tags().keys().map(
+						func (key: String) -> Array: return [
+							key,
+							vertex.get_tags()[key],
+						]
+					)
+				),
+"""{
+					\"vertex_name\": \"%s\",
+					\"tags\": [
+						%s
+					]
+				},
+				""".repeat(vertex.get_outgoing_vertices().size()) % _flatten_array(
+					vertex.get_outgoing_vertices().map(
+						func (other_vertex: GraphVertex) -> Array: return [
+							other_vertex.get_value(),
+"""{\"%s\": \"%s\",},
+						""".repeat(other_vertex.get_tags().size()) % _flatten_array(
+							other_vertex.get_tags().keys().map(
+								func (other_key: String) -> Array: return [
+									other_key,
+									other_vertex.get_tags()[other_key],
+								]
+							)
+						),
+						]
+					),
+				)
+				]
+			)
+		)
+]
+
+
 func _get_vertex_set() -> Array[GraphVertex]:
 	return _vertex_set
+
+
+func _flatten_array(array: Array) -> Array:
+	if array.is_empty():
+		return []
+	
+	var flattened_array: Array = []
+	flattened_array.resize(array.size() * array[0].size())
+	
+	for i in array.size():
+		for j in array[i].size():
+			flattened_array[i * array[0].size() + j] = array[i][j]
+	
+	return flattened_array
 
 
 static func _add_if_possible(
@@ -111,6 +183,10 @@ static func _add_if_possible(
 			return
 	
 	vertices.append(vertex)
+
+
+static func build_from_dictionary(dictionary: Dictionary) -> GodDaggerGraph:
+	return GodDaggerGraph.new("")
 
 
 class GraphVertex extends RefCounted:

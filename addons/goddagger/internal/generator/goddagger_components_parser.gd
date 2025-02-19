@@ -348,7 +348,7 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	var subcomponent_classes := GodDaggerComponentResolver._resolve_subcomponent_classes()
 	var module_classes := GodDaggerModuleResolver._resolve_module_classes()
 	
-	var component_relationships_graph := GodDaggerGraph.new("Boundaries Graph")
+	var component_relationships_graph := GodDaggerGraph.new("Component Relationships Graph")
 	var components_to_objects_graphs: Dictionary = {}
 	
 	for module_class in module_classes:
@@ -383,50 +383,26 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 				property,
 			)
 	
+	var serialized_component_relationships_graph: String = \
+		"var serialized_component_relationships_graph: Dictionary = %s" % \
+			component_relationships_graph.serialize()
+	
+	var serialized_components_to_objects_graphs: String = \
+		"var serialized_components_to_objects_graphs: Dictionary = {"
 	for component_name in components_to_objects_graphs.keys():
-		print("'%s' has the following objects in topological order:" % component_name)
-		
-		var objects_graph: GodDaggerGraph = components_to_objects_graphs[component_name]
-		
-		for object in objects_graph.get_topological_order():
-			if object == component_name:
-				continue
-			
-			elif component_relationships_graph.has_graph_vertex(object):
-				var subcomponent_scope = component_relationships_graph.get_vertex_tag(
-					object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
-				)
-				
-				var component_scope = component_relationships_graph.get_vertex_tag(
-					component_name, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
-				)
-				
-				var scoped_to: String
-				if component_scope:
-					scoped_to = "scoped to %s:%s" % [component_name, component_scope]
-				else:
-					scoped_to = "scoped to %s" % component_name
-				
-				if subcomponent_scope:
-					print(
-						"Subcomponent: %s (defines %s scope, %s)" % [
-							object, subcomponent_scope, scoped_to
-						]
-					)
-				else:
-					print("Subcomponent: %s (%s)" % [object, scoped_to])
-				
-				continue
-			
-			var object_scope = objects_graph.get_vertex_tag(
-				object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG
-			)
-			
-			if object_scope:
-				print("Object: %s (scoped to %s)" % [object, object_scope])
-			
-			else:
-				print("Object: %s (unscoped)" % object)
+		serialized_components_to_objects_graphs += "\n\"%s\": %s," % [
+			component_name, components_to_objects_graphs[component_name].serialize().indent("\t")
+		]
+	serialized_components_to_objects_graphs += "}"
+	
+	print("### SERIALIZED GRAPHS ###")
+	print("#### * RELATIONSHIPS ####")
+	print(serialized_component_relationships_graph)
+	print("#### RELATIONSHIPS * ####")
+	print("#### * OBJECT GRAPHS ####")
+	print(serialized_components_to_objects_graphs)
+	print("#### OBJECT GRAPHS * ####")
+	print("### GRAPHS SERIALIZED ###")
 	
 	return GodDaggerFileUtils._generate_script_with_contents(
 		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,

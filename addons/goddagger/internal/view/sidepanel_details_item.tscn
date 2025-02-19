@@ -1,26 +1,26 @@
 [gd_scene format=3 uid="uid://cvgqidpq7llen"]
 
-[node name="Object Details View" type="MarginContainer"]
+[node name="SidePanelDetailsItem" type="MarginContainer"]
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Object Details Row" type="HFlowContainer" parent="VBoxContainer"]
+[node name="HFlowContainer" type="HFlowContainer" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="Object Name Label" type="Label" parent="VBoxContainer/Object Details Row"]
+[node name="SidePanelItemClassName" type="Label" parent="VBoxContainer/HFlowContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "ElectricHeater"
 
-[node name="Object Filename Label" type="Label" parent="VBoxContainer/Object Details Row"]
+[node name="SidePanelItemFilename" type="Label" parent="VBoxContainer/HFlowContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "example/heater/electric_heater.gd"
 horizontal_alignment = 2
 justification_flags = 35
 
-[node name="CodeEdit" type="CodeEdit" parent="VBoxContainer"]
+[node name="SidePanelItemCodedDetails" type="CodeEdit" parent="VBoxContainer"]
 layout_mode = 2
 text = "~ scoped to RootScope
 ~ independent"
@@ -28,10 +28,10 @@ editable = false
 selecting_enabled = false
 scroll_fit_content_height = true
 
-[node name="Parse Error View" type="HFlowContainer" parent="VBoxContainer"]
+[node name="HFlowContainer2" type="HFlowContainer" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="Pase Error Description Label" type="Label" parent="VBoxContainer/Parse Error View"]
+[node name="SidePanelItemParseErrorDescription" type="Label" parent="VBoxContainer/HFlowContainer2"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_horizontal = 3

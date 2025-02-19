@@ -2,7 +2,9 @@
 
 [resource]
 Label/font_sizes/font_size = 14
+LineEdit/font_sizes/font_size = 12
 MarginContainer/constants/margin_bottom = 6
 MarginContainer/constants/margin_left = 6
 MarginContainer/constants/margin_right = 6
 MarginContainer/constants/margin_top = 6
+TextEdit/font_sizes/font_size = 12

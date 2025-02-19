@@ -1,0 +1,53 @@
+[gd_scene load_steps=3 format=3 uid="uid://dy4fqw22u8o44"]
+
+[ext_resource type="Theme" uid="uid://cxkk5560iym3g" path="res://addons/goddagger/internal/view/goddager_panel_theme.tres" id="1_rd7b0"]
+[ext_resource type="Script" path="res://addons/goddagger/internal/view/goddagger_main_panel.gd" id="2_8siaj"]
+
+[node name="GodDaggerMainPanel" type="HSplitContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme = ExtResource("1_rd7b0")
+split_offset = 200
+script = ExtResource("2_8siaj")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="GraphRelationshipsSidePanel" type="ScrollContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_scroll_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/GraphRelationshipsSidePanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/GraphRelationshipsSidePanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GraphObjectsSidePanel" type="ScrollContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_scroll_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/GraphObjectsSidePanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/GraphObjectsSidePanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="DependencyGraphPanel" type="GraphEdit" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+grid_pattern = 1
+minimap_enabled = false
+show_menu = false
