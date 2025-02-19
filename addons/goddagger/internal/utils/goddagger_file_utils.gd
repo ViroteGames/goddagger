@@ -11,14 +11,6 @@ static func _is_file_an_interface(absolute_file_path: String) -> bool:
 	return absolute_file_path.ends_with(GodDaggerConstants.EXPECTED_INTERFACE_FILE_FORMAT)
 
 
-static func _get_components_file_name() -> String:
-	return "%s/%s%s.gd" % [
-		GENERATED_PATH,
-		GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
-		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
-	]
-
-
 static func _get_path_for_generated_script(file_name: String) -> String:
 	return "%s/%s%s.gd" % [
 		GENERATED_PATH, GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX, file_name,

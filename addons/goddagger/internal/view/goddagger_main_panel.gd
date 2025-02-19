@@ -17,11 +17,11 @@ var _sidepanel_details_item_scene := \
 
 
 func _ready() -> void:
-	var generated_components := GodDaggerComponentsParser._get_components()
+	var parsing_result := GodDaggerComponentsParser._get_parsing_result()
 	
 	_on_parse_results_updated(
-		generated_components._get_component_relationships_graph(),
-		generated_components._get_components_to_objects_graphs(),
+		parsing_result._get_component_relationships_graph(),
+		parsing_result._get_components_to_objects_graphs(),
 	)
 
 
