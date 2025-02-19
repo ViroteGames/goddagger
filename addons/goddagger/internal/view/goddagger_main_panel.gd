@@ -17,22 +17,20 @@ var _sidepanel_details_item_scene := \
 
 
 func _ready() -> void:
-	pass
-	#_on_parse_results_updated(
-		#GodDaggerComponentsParser._component_relationships_graph,
-		#GodDaggerComponentsParser._components_to_objects_graphs,
-	#)
+	var generated_components := GodDaggerComponentsParser._get_components()
+	
+	_on_parse_results_updated(
+		generated_components._get_component_relationships_graph(),
+		generated_components._get_components_to_objects_graphs(),
+	)
 
 
 func _on_parse_results_updated(
 	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
 ) -> void:
-	print("PARSE RESULTS: %s, %s" % [component_relationships_graph, components_to_objects_graphs])
-	#return
-	#
-	#for definition_name in component_relationships_graph.get_topological_order():
-		#print("'%s' definition exists in the component relationships graph." % definition_name)
+	for definition_name in component_relationships_graph.get_topological_order():
+		print("'%s' definition exists in the component relationships graph." % definition_name)
 	
 	for component_name in components_to_objects_graphs.keys():
 		print("'%s' has the following objects in topological order:" % component_name)

@@ -22,8 +22,13 @@ const EXPECTED_INTERFACE_FILE_FORMAT := ".interface.gd"
 
 const GODDAGGER_GENERATED_COMPONENTS_FILE_NAME := "generated_components"
 
-const MAIN_PANEL_TITLE := "Graph"
-const MAIN_PANEL_SCENE_PATH := "res://addons/goddagger/internal/view/main_panel.tscn"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_NAME := "name"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_VERTICES := "vertices"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_VERTEX_NAME := "vertex_name"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_TAGS := "tags"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_NAME := "tag_name"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_VALUE := "tag_value"
+const GODDAGGER_GRAPH_SERIALIZED_KEY_OUTGOING_VERTICES = "outgoing_vertices"
 
 
 # Godot Engine or GDScript-related constants

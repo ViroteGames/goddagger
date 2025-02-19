@@ -14,7 +14,7 @@ var _main_panel_scene_root_node: Node = null
 
 
 func _get_plugin_name() -> String:
-	return GodDaggerConstants.MAIN_PANEL_TITLE
+	return GodDaggerViewConstants.GODDAGGER_MAIN_PANEL_TITLE
 
 
 func _get_plugin_icon() -> Texture2D:
@@ -27,7 +27,7 @@ func _has_main_screen() -> bool:
 
 func _enter_tree() -> void:
 	if not _main_panel_scene_root_node:
-		var main_panel_scene := preload(GodDaggerConstants.MAIN_PANEL_SCENE_PATH)
+		var main_panel_scene := preload(GodDaggerViewConstants.MAIN_PANEL_SCENE_PATH)
 		_main_panel_scene_root_node = main_panel_scene.instantiate()
 		EditorInterface.get_editor_main_screen().add_child(_main_panel_scene_root_node)
 		_make_visible(false)

@@ -98,61 +98,42 @@ func get_vertex_tag(value: Variant, tag_name: String) -> Variant:
 
 
 func serialize() -> String:
-	return """{
-	\"name\": \"%s\",
-	\"vertices\": [
-		%s
-	]
-}""" % [
-	self._name,
-"""{
-			\"vertex_name\": \"%s\",
-			\"tags\": [
-				%s
-			],
-			\"outgoing_vertices\": [
-				%s
-			]
-		},
-		""".repeat(_get_vertex_set().size()) % _flatten_array(
+	return "{\"%s\": \"%s\",\"%s\": [%s]}" % [
+		GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_NAME,
+		self._name,
+		GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTICES,
+		"{\"%s\": \"%s\",\"%s\": [%s],\"%s\": [%s]}," \
+		.repeat(_get_vertex_set().size()) % _flatten_array(
 			_get_vertex_set().map(
 				func (vertex: GraphVertex) -> Array: return [
+					GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTEX_NAME,
 					vertex.get_value(),
-"""{\"%s\": \"%s\",},
-				""".repeat(vertex.get_tags().keys().size()) % _flatten_array(
-					vertex.get_tags().keys().map(
-						func (key: String) -> Array: return [
-							key,
-							vertex.get_tags()[key],
-						]
-					)
-				),
-"""{
-					\"vertex_name\": \"%s\",
-					\"tags\": [
-						%s
-					]
-				},
-				""".repeat(vertex.get_outgoing_vertices().size()) % _flatten_array(
-					vertex.get_outgoing_vertices().map(
-						func (other_vertex: GraphVertex) -> Array: return [
-							other_vertex.get_value(),
-"""{\"%s\": \"%s\",},
-						""".repeat(other_vertex.get_tags().size()) % _flatten_array(
-							other_vertex.get_tags().keys().map(
-								func (other_key: String) -> Array: return [
-									other_key,
-									other_vertex.get_tags()[other_key],
-								]
-							)
-						),
-						]
+					GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAGS,
+					"{\"%s\": \"%s\", \"%s\": \"%s\",}," \
+					.repeat(vertex.get_tags().keys().size()) % _flatten_array(
+						vertex.get_tags().keys().map(
+							func (key: String) -> Array: return [
+								GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_NAME,
+								key,
+								GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_VALUE,
+								vertex.get_tags()[key],
+							]
+						)
 					),
-				)
+					GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_OUTGOING_VERTICES,
+					"{\"%s\": \"%s\"}," \
+					.repeat(vertex.get_outgoing_vertices().size()) % _flatten_array(
+						vertex.get_outgoing_vertices().map(
+							func (other_vertex: GraphVertex) -> Array: return [
+								GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTEX_NAME,
+								other_vertex.get_value(),
+							]
+						),
+					)
 				]
 			)
 		)
-]
+	]
 
 
 func _get_vertex_set() -> Array[GraphVertex]:
@@ -185,8 +166,44 @@ static func _add_if_possible(
 	vertices.append(vertex)
 
 
+static func serialize_dictionary(dictionary: Dictionary) -> String:
+	var serialized_dictionary: String = "{"
+	for key in dictionary.keys():
+		serialized_dictionary += "\n\"%s\": %s," % [
+			key, dictionary[key].serialize().indent("\t")
+		]
+	serialized_dictionary += "}"
+	return serialized_dictionary
+
+
 static func build_from_dictionary(dictionary: Dictionary) -> GodDaggerGraph:
-	return GodDaggerGraph.new("")
+	var goddagger_graph: GodDaggerGraph = \
+		GodDaggerGraph.new(dictionary[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_NAME])
+	
+	var vertices = dictionary[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTICES]
+	
+	for vertex in vertices:
+		var vertex_name = vertex[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTEX_NAME]
+		goddagger_graph.declare_graph_vertex(vertex_name)
+		
+		var tags = vertex[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAGS]
+		for tag in tags:
+			var tag_name = tag[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_NAME]
+			var tag_value = tag[GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_TAG_VALUE]
+			goddagger_graph.set_tag_to_vertex(vertex_name, tag_name, tag_value)
+		
+		var outgoing_vertices_of_vertex = vertex[
+			GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_OUTGOING_VERTICES
+		]
+		
+		for other_vertex in outgoing_vertices_of_vertex:
+			var other_vertex_name = other_vertex[
+				GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_VERTEX_NAME
+			]
+			goddagger_graph.declare_graph_vertex(other_vertex_name)
+			goddagger_graph.declare_vertices_link(vertex_name, other_vertex_name)
+	
+	return goddagger_graph
 
 
 class GraphVertex extends RefCounted:
