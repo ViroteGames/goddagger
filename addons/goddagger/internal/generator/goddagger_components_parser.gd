@@ -4,7 +4,7 @@ class_name GodDaggerComponentsParser extends RefCounted
 static var _generated_components: GodDaggerGeneratedComponents
 
 
-static func _get_components() -> GodDaggerGeneratedComponents:
+static func get_components() -> GodDaggerGeneratedComponents:
 	var script_name := GodDaggerFileUtils._get_path_for_generated_script(
 		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
 	)
@@ -14,11 +14,11 @@ static func _get_components() -> GodDaggerGeneratedComponents:
 	return _generated_components
 
 
-static func _get_parsing_result() -> GodDaggerParsingResult:
+static func get_parsing_result() -> GodDaggerParsingResult.CompiledResult:
 	var script_name := GodDaggerFileUtils._get_path_for_generated_script(
 		GodDaggerConstants.GODDAGGER_GENERATED_PARSING_RESULT_FILE_NAME,
 	)
-	return load(script_name).new()
+	return load(script_name).new().compile()
 
 
 static func _populate_component_objects_graph_by_parsing_arguments(
@@ -128,6 +128,7 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 static func _populate_component_objects_graph_by_parsing_module_method(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_objects_graph: GodDaggerGraph,
+	module_class_name: String,
 	method: Dictionary,
 ) -> void:
 	
@@ -139,6 +140,7 @@ static func _populate_component_objects_graph_by_parsing_module_method(
 			[GodDaggerConstants.KEY_PROPERTY_CLASS_NAME]
 		
 		component_objects_graph.declare_graph_vertex(provider_method_object_class)
+		component_objects_graph.declare_vertices_link(module_class_name, provider_method_object_class)
 		
 		var provider_method_arguments: Array[Dictionary] = \
 			method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
@@ -172,6 +174,16 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 				var resolved_file_path := subcomponent_class.get_resolved_file_path()
 				
 				component_relationships_graph.declare_graph_vertex(subcomponent_class_name)
+				component_relationships_graph.set_tag_to_vertex(
+					subcomponent_class_name,
+					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_DEFINITION_TAG,
+					GodDaggerConstants.BASE_GODDAGGER_SUBCOMPONENT_NAME,
+				)
+				component_relationships_graph.set_tag_to_vertex(
+					subcomponent_class_name,
+					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+					resolved_file_path,
+				)
 				component_relationships_graph.declare_vertices_link(
 					subcomponent_class_name, module_class_name,
 				)
@@ -226,6 +238,7 @@ static func _populate_component_objects_graph_by_parsing_module(
 				_populate_component_objects_graph_by_parsing_module_method(
 					module_classes,
 					component_objects_graph,
+					module_class_name,
 					method,
 				)
 			
@@ -260,9 +273,10 @@ static func _populate_graphs_by_parsing_component_property(
 			._resolved_classes_contains_given_class(module_classes, property_class)
 		
 		if is_property_class_a_module:
-			component_relationships_graph.declare_vertices_link(
-				property_class, component_class_name,
-			)
+			component_relationships_graph \
+				.declare_vertices_link(property_class, component_class_name)
+			components_to_objects_graphs[component_class_name] \
+				.declare_graph_vertex(property_class)
 			
 			_populate_component_objects_graph_by_parsing_module(
 				module_classes,
@@ -278,6 +292,8 @@ static func _populate_graphs_by_parsing_component_property(
 			
 			components_to_objects_graphs[component_class_name] \
 				.declare_graph_vertex(property_class)
+			components_to_objects_graphs[component_class_name] \
+				.declare_vertices_link(property_class, component_class_name)
 			
 			_populate_component_objects_graph_by_parsing_object_constructor(
 				components_to_objects_graphs[component_class_name],
@@ -326,7 +342,7 @@ static func _populate_component_objects_graph_scope_by_parsing_component_methods
 							if component_scope == ancestor_component_scope:
 								assert(
 									false,
-									""
+									"Cannot use this scope" # TODO elaborate further on this error!
 								)
 								return
 				
@@ -350,6 +366,7 @@ static func _populate_component_objects_graph_scope_by_parsing_component_methods
 
 
 static func _build_dependency_graph_by_parsing_project_files() -> bool:
+	print("Building again...")
 	if not GodDaggerFileUtils._clear_generated_files():
 		return false
 	
@@ -362,13 +379,35 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
+		var resolved_file_path := module_class.get_resolved_file_path()
+		
 		component_relationships_graph.declare_graph_vertex(resolved_class_name)
+		component_relationships_graph.set_tag_to_vertex(
+			resolved_class_name,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_DEFINITION_TAG,
+			GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME,
+		)
+		component_relationships_graph.set_tag_to_vertex(
+			resolved_class_name,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+			resolved_file_path,
+		)
 	
 	for component_class in component_classes:
 		var resolved_class_name := component_class.get_resolved_class_name()
 		var resolved_file_path := component_class.get_resolved_file_path()
 		
 		component_relationships_graph.declare_graph_vertex(resolved_class_name)
+		component_relationships_graph.set_tag_to_vertex(
+			resolved_class_name,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_DEFINITION_TAG,
+			GodDaggerConstants.BASE_GODDAGGER_COMPONENT_NAME,
+		)
+		component_relationships_graph.set_tag_to_vertex(
+			resolved_class_name,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+			resolved_file_path,
+		)
 		components_to_objects_graphs[resolved_class_name] = \
 			GodDaggerGraph.new("%s's Object Graph" % resolved_class_name)
 		
@@ -381,6 +420,9 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 			methods,
 		)
 		
+		components_to_objects_graphs[resolved_class_name] \
+			.declare_graph_vertex(resolved_class_name)
+		
 		var properties := loaded_script.get_property_list()
 		for property in properties:
 			_populate_graphs_by_parsing_component_property(
@@ -391,10 +433,6 @@ static func _build_dependency_graph_by_parsing_project_files() -> bool:
 				resolved_class_name,
 				property,
 			)
-	
-	# TODO separate concerns. Keep GodDaggerGeneratedComponents exclusive for injection in client
-	#  objects and generate an instance of a different class exclusively for consumption by the
-	#  plugin's main panel tool script!
 	
 	var did_generate_parsing_result := GodDaggerFileUtils \
 		._generate_script_with_contents(

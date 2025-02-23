@@ -8,6 +8,8 @@ const BASE_GODDAGGER_MODULE_NAME := "GodDaggerModule"
 const BASE_GODDAGGER_SCOPE_NAME := "GodDaggerScope"
 
 const GODDAGGER_GRAPH_VERTEX_SCOPE_TAG := "scope"
+const GODDAGGER_GRAPH_VERTEX_DEFINITION_TAG := "definition"
+const GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG := "file_path"
 
 const DECLARED_INJECTED_PROPERTY_PREFIX := "__injected_"
 const DECLARED_PROVIDER_METHOD_PREFIX := "__provide_"

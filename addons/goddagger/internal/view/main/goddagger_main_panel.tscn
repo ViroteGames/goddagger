@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dy4fqw22u8o44"]
 
 [ext_resource type="Theme" uid="uid://cxkk5560iym3g" path="res://addons/goddagger/internal/view/goddager_panel_theme.tres" id="1_rd7b0"]
-[ext_resource type="Script" path="res://addons/goddagger/internal/view/goddagger_main_panel.gd" id="2_8siaj"]
+[ext_resource type="Script" path="res://addons/goddagger/internal/view/main/goddagger_main_panel.gd" id="2_8siaj"]
 
 [node name="GodDaggerMainPanel" type="HSplitContainer"]
 anchors_preset = 15

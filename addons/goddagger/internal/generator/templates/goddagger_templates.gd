@@ -18,10 +18,10 @@ func _init() -> void:
 		)
 
 
-func _get_component_relationships_graph() -> GodDaggerGraph:
+func get_component_relationships_graph() -> GodDaggerGraph:
 	return _component_relationships_graph
 
 
-func _get_components_to_objects_graphs() -> Dictionary:
+func get_components_to_objects_graphs() -> Dictionary:
 	return _components_to_objects_graphs
 """

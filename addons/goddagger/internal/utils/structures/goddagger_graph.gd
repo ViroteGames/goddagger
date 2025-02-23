@@ -56,6 +56,19 @@ func declare_vertices_link(from_value: Variant, to_value: Variant) -> void:
 			child.declare_vertices_link(from_value, to_value)
 
 
+func get_incoming_vertices(value: Variant) -> Array[Variant]:
+	var incoming_vertices: Array[Variant] = []
+	
+	if not has_graph_vertex(value):
+		return incoming_vertices
+	
+	var vertex: GraphVertex = _vertex_lookup_table[value]
+	for other_vertex in vertex.get_incoming_vertices():
+		incoming_vertices.append(other_vertex.get_value())
+	
+	return incoming_vertices
+
+
 func get_outgoing_vertices(value: Variant) -> Array[Variant]:
 	var outgoing_vertices: Array[Variant] = []
 	
