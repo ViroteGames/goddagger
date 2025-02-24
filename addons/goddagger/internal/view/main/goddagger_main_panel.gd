@@ -7,9 +7,7 @@ var _object_graph_node_scene := \
 
 
 @onready var _graph_relationships_side_panel := \
-	$"HBoxContainer/GraphRelationshipsSidePanel/MarginContainer/VBoxContainer"
-@onready var _graph_objects_side_panel := \
-	$"HBoxContainer/GraphObjectsSidePanel/MarginContainer/VBoxContainer"
+	$"GraphRelationshipsSidePanel/MarginContainer/VBoxContainer"
 @onready var _dependency_graph_panel := $"DependencyGraphPanel"
 
 
