@@ -16,14 +16,18 @@ var _object_graph_node_scene := \
 func _ready() -> void:
 	var parsing_result := GodDaggerComponentsParser.get_parsing_result()
 	
-	_on_parse_results_updated(
-		parsing_result.get_components(),
-	)
+	_on_parse_results_updated(parsing_result)
 
 
-func _on_parse_results_updated(
-	components: Array[GodDaggerParsingResult.CompiledResult.Component],
-) -> void:
+func _on_parse_results_updated(parsing_result: GodDaggerParsingResult.CompiledResult) -> void:
+	for component in parsing_result.get_components():
+		var component_item_view := SidePanelDetailsItem.Component.spawn(component)
+		_graph_relationships_side_panel.add_child(component_item_view)
 	
-	for component in components:
-		_graph_relationships_side_panel.add_child(SidePanelDetailsItem.Component.spawn(component))
+	for subcomponent in parsing_result.get_subcomponents():
+		var subcomponent_item_view := SidePanelDetailsItem.Subcomponent.spawn(subcomponent)
+		_graph_relationships_side_panel.add_child(subcomponent_item_view)
+	
+	for module in parsing_result.get_modules():
+		var module_item_view := SidePanelDetailsItem.Module.spawn(module)
+		_graph_relationships_side_panel.add_child(module_item_view)

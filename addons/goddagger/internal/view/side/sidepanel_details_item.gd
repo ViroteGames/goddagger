@@ -65,7 +65,7 @@ static func spawn(
 		)
 
 
-class Component:
+class Component extends RefCounted:
 	
 	static func spawn(
 		component: GodDaggerParsingResult.CompiledResult.Component,
@@ -88,5 +88,85 @@ class Component:
 			component.get_name(),
 			component.get_file_path(),
 			coded_details_text,
-			"",
+			component.get_parse_error(),
+		)
+
+
+class Subcomponent extends RefCounted:
+	
+	static func spawn(
+		subcomponent: GodDaggerParsingResult.CompiledResult.Subcomponent,
+	) -> SidePanelDetailsItem:
+		
+		var coded_details_text := ""
+		
+		if not subcomponent.get_linked_parents().is_empty():
+			coded_details_text += "~ extends the following:"
+			
+			for linked_parent in subcomponent.get_linked_parents():
+				coded_details_text += "\n\t~ %s via %s" % [
+					linked_parent.get_component(), linked_parent.get_linking_module(),
+				]
+		
+		if not coded_details_text.is_empty():
+			coded_details_text += "\n"
+		
+		if subcomponent.get_scope().is_empty():
+			coded_details_text += "~ unscoped"
+		else:
+			coded_details_text += "~ scoped to %s" % subcomponent.get_scope()
+		
+		if not subcomponent.get_modules().is_empty():
+			coded_details_text += "\n~ uses %s" % ", ".join(subcomponent.get_modules())
+		
+		if not subcomponent.get_exposed_objects().is_empty():
+			coded_details_text += "\n~ exposes %s" % ", ".join(subcomponent.get_exposed_objects())
+		
+		return SidePanelDetailsItem.spawn(
+			subcomponent.get_name(),
+			subcomponent.get_file_path(),
+			coded_details_text,
+			subcomponent.get_parse_error(),
+		)
+
+
+class Module extends RefCounted:
+	
+	static func spawn(
+		module: GodDaggerParsingResult.CompiledResult.Module,
+	) -> SidePanelDetailsItem:
+		
+		var coded_details_text := ""
+		
+		if not module.get_dependent_components().is_empty():
+			if not coded_details_text.is_empty():
+				coded_details_text += "\n"
+			
+			coded_details_text += "~ used by %s" % ", ".join(module.get_dependent_components())
+		
+		if not module.get_linked_subcomponents().is_empty():
+			if not coded_details_text.is_empty():
+				coded_details_text += "\n"
+			
+			coded_details_text += "~ links to %s" % ", ".join(module.get_linked_subcomponents())
+		
+		if not module.get_provisions().is_empty():
+			if not coded_details_text.is_empty():
+				coded_details_text += "\n"
+			
+			coded_details_text += "~ provisions the following:"
+			
+			for provision in module.get_provisions():
+				coded_details_text += "\n\t~ %s%s depends on %s" % [
+					provision.get_name(),
+					"" if provision.get_scope().is_empty() \
+					else " (scoped to %s)" % provision.get_scope(),
+					", ".join(provision.get_dependencies())
+				]
+		
+		return SidePanelDetailsItem.spawn(
+			module.get_name(),
+			module.get_file_path(),
+			coded_details_text,
+			module.get_parse_error(),
 		)
