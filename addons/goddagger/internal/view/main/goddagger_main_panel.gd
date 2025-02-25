@@ -29,3 +29,7 @@ func _on_parse_results_updated(parsing_result: GodDaggerParsingResult.CompiledRe
 	for module in parsing_result.get_modules():
 		var module_item_view := SidePanelDetailsItem.Module.spawn(module)
 		_graph_relationships_side_panel.add_child(module_item_view)
+	
+	for object in parsing_result.get_objects():
+		var object_item_view := SidePanelDetailsItem.ObjectType.spawn(object)
+		_graph_relationships_side_panel.add_child(object_item_view)

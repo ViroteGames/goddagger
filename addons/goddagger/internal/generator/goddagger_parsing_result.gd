@@ -16,16 +16,19 @@ class CompiledResult extends RefCounted:
 	var _components: Array[Component] = []
 	var _subcomponents: Array[Subcomponent] = []
 	var _modules: Array[Module] = []
+	var _objects: Array[ObjectType] = []
 	
 	func _init(
 		components: Array[Component],
 		subcomponents: Array[Subcomponent],
 		modules: Array[Module],
+		objects: Array[ObjectType],
 	) -> void:
 		
 		self._components = components
 		self._subcomponents = subcomponents
 		self._modules = modules
+		self._objects = objects
 	
 	func get_components() -> Array[Component]:
 		return self._components
@@ -35,6 +38,9 @@ class CompiledResult extends RefCounted:
 	
 	func get_modules() -> Array[Module]:
 		return self._modules
+	
+	func get_objects() -> Array[ObjectType]:
+		return self._objects
 	
 	
 	class ParsedElement extends RefCounted:
@@ -190,6 +196,39 @@ class CompiledResult extends RefCounted:
 			
 			func add_dependency(dependency: String) -> void:
 				self._dependencies.append(dependency)
+	
+	
+	class ObjectType extends ParsedElement:
+		
+		var _provision_module: String
+		var _dependencies: Array[String]
+		var _scope: String
+		
+		func _init(
+			name: String,
+			file_path: String,
+			parse_error: String = "",
+		) -> void:
+			
+			super._init(name, file_path, parse_error)
+		
+		func get_provision_module() -> String:
+			return self._provision_module
+		
+		func set_provision_module(provision_module: String) -> void:
+			self._provision_module = provision_module
+		
+		func get_dependencies() -> Array[String]:
+			return self._dependencies
+		
+		func add_dependency(dependency: String) -> void:
+			self._dependencies.append(dependency)
+		
+		func get_scope() -> String:
+			return self._scope
+		
+		func set_scope(scope: String) -> void:
+			self._scope = scope
 
 
 func compile() -> CompiledResult:
@@ -291,6 +330,36 @@ static func compile_module(
 	return module
 
 
+static func compile_object(
+	component_relationships_graph: GodDaggerGraph,
+	component_to_objects_graph: GodDaggerGraph,
+	module_names: Array[String],
+	object_name: String,
+) -> CompiledResult.ObjectType:
+	
+	var file_path := component_to_objects_graph.get_vertex_tag(
+		object_name, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+	)
+	
+	var object := CompiledResult.ObjectType.new(object_name, file_path)
+	
+	for dependency in component_to_objects_graph.get_incoming_vertices(object_name):
+		if module_names.has(dependency):
+			object.set_provision_module(dependency)
+		
+		else:
+			object.add_dependency(dependency)
+	
+	var scope := component_to_objects_graph.get_vertex_tag(
+		object_name, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
+	)
+	
+	if scope:
+		object.set_scope(scope)
+	
+	return object
+
+
 static func compile_results(
 	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
@@ -299,6 +368,7 @@ static func compile_results(
 	var components: Array[CompiledResult.Component] = []
 	var subcomponents: Array[CompiledResult.Subcomponent] = []
 	var modules: Array[CompiledResult.Module] = []
+	var objects: Array[CompiledResult.ObjectType] = []
 	
 	var relationship_definitions := component_relationships_graph.get_topological_order()
 	relationship_definitions.reverse()
@@ -341,6 +411,8 @@ static func compile_results(
 						file_path,
 					)
 				)
+	
+	var objects_map: Dictionary = {}
 	
 	for component_name in components_to_objects_graphs.keys():
 		print("'%s' has the following objects in topological order:" % component_name)
@@ -389,7 +461,23 @@ static func compile_results(
 			
 			else:
 				print("Object: %s (unscoped)" % object)
+			
+			var module_names: Array[String] = []
+			modules.map(
+				func (module: CompiledResult.Module) -> void:
+					module_names.append(module.get_name())
+			)
+			
+			objects_map[object] = compile_object(
+				component_relationships_graph,
+				components_to_objects_graphs[component_name],
+				module_names,
+				object,
+			)
+	
+	for object in objects_map.keys():
+		objects.append(objects_map[object])
 	
 	return CompiledResult.new(
-		components, subcomponents, modules,
+		components, subcomponents, modules, objects,
 	)

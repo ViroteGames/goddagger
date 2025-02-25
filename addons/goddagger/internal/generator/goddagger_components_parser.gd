@@ -74,10 +74,6 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 	
 	var object_class := GodDaggerObjectResolver._resolve_object_class(object_class_name)
 	
-	if component_objects_graph.has_graph_vertex(object_class):
-		# No need to populate again, this object_class' dependencies have already been processed.
-		return
-	
 	var resolved_file_path := object_class.get_resolved_file_path()
 	
 	var error_message := "Could not parse object constructor for '%s'" % object_class_name
@@ -123,6 +119,12 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 				object_class_name,
 				constructor_arguments,
 			)
+	
+	component_objects_graph.set_tag_to_vertex(
+		object_class_name,
+		GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+		resolved_file_path,
+	)
 
 
 static func _populate_component_objects_graph_by_parsing_module_method(
@@ -149,6 +151,15 @@ static func _populate_component_objects_graph_by_parsing_module_method(
 			component_objects_graph,
 			provider_method_object_class,
 			provider_method_arguments,
+		)
+		
+		var resolved_class := GodDaggerObjectResolver \
+			._resolve_object_class(provider_method_object_class)
+		
+		component_objects_graph.set_tag_to_vertex(
+			provider_method_object_class,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
+			resolved_class.get_resolved_file_path(),
 		)
 
 

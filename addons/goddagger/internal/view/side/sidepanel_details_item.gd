@@ -171,3 +171,35 @@ class Module extends RefCounted:
 			coded_details_text,
 			module.get_parse_error(),
 		)
+
+
+class ObjectType extends RefCounted:
+	
+	static func spawn(
+		object: GodDaggerParsingResult.CompiledResult.ObjectType,
+	) -> SidePanelDetailsItem:
+		
+		var coded_details_text := ""
+		
+		if not object.get_provision_module().is_empty():
+			coded_details_text += "~ provisioned by %s" % object.get_provision_module()
+		
+		if not coded_details_text.is_empty():
+			coded_details_text += "\n"
+		
+		if object.get_dependencies().is_empty():
+			coded_details_text += "~ independent"
+		else:
+			coded_details_text += "~ depends on %s" % ", ".join(object.get_dependencies())
+		
+		if object.get_scope().is_empty():
+			coded_details_text += "\n~ unscoped"
+		else:
+			coded_details_text += "\n~ scoped to %s" % object.get_scope()
+		
+		return SidePanelDetailsItem.spawn(
+			object.get_name(),
+			object.get_file_path(),
+			coded_details_text,
+			object.get_parse_error(),
+		)
