@@ -36,7 +36,7 @@ func has_graph_vertex(value: Variant) -> bool:
 func declare_graph_vertex(value: Variant) -> void:
 	if not _vertex_lookup_table.keys().has(value):
 		_vertex_lookup_table[value] = GraphVertex.new(value)
-		print("%s is now aware of: %s!" % [self._name, value])
+		#print("%s is now aware of: %s!" % [self. _name, value])
 	
 	var vertex: GraphVertex = _vertex_lookup_table[value]
 	_add_if_possible(vertex, _vertex_set)
@@ -50,7 +50,7 @@ func declare_vertices_link(from_value: Variant, to_value: Variant) -> void:
 		var from_vertex: GraphVertex = _vertex_lookup_table[from_value]
 		var to_vertex: GraphVertex = _vertex_lookup_table[to_value]
 		from_vertex._add_edge_towards(to_vertex)
-		print("%s formed a link from %s to %s..." % [self._name, from_value, to_value])
+		#print("%s formed a link from %s to %s..." % [self._name, from_value, to_value])
 		
 		for child in _children:
 			child.declare_vertices_link(from_value, to_value)

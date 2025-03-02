@@ -1,5 +1,5 @@
 @tool
-class_name GodDaggerMainPanel extends Node
+class_name GodDaggerMainPanel extends HSplitContainer
 
 
 var _object_graph_node_scene := \
@@ -11,13 +11,22 @@ var _object_graph_node_scene := \
 @onready var _dependency_graph_panel := $"DependencyGraphPanel"
 
 
-func _ready() -> void:
-	var parsing_result := GodDaggerComponentsParser.get_parsing_result()
+func _react_to_main_screen_change(screen_name: String) -> void:
+	if not screen_name == GodDaggerViewConstants.GODDAGGER_MAIN_PANEL_TITLE:
+		return
 	
-	_on_parse_results_updated(parsing_result)
+	_update_visible_parsing_result(
+		GodDaggerComponentsParser \
+			._build_dependency_graph_by_parsing_project_files()
+			.compile(),
+	)
 
 
-func _on_parse_results_updated(parsing_result: GodDaggerParsingResult.CompiledResult) -> void:
+func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.CompiledResult) -> void:
+	for child in _graph_relationships_side_panel.get_children():
+		_graph_relationships_side_panel.remove_child(child)
+		child.queue_free()
+	
 	for component in parsing_result.get_components():
 		var component_item_view := SidePanelDetailsItem.Component.spawn(component)
 		_graph_relationships_side_panel.add_child(component_item_view)

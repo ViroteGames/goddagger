@@ -1,14 +1,28 @@
 class_name GodDaggerParsingResult extends RefCounted
 
 
-func get_component_relationships_graph() -> GodDaggerGraph:
-	assert(false, "This method should have been overriden!")
-	return GodDaggerGraph.new("Void")
+var _component_relationships_graph: GodDaggerGraph
+var _components_to_objects_graphs: Dictionary
+var _parse_error: String
 
 
-func get_components_to_objects_graphs() -> Dictionary:
-	assert(false, "This method should have been overriden!")
-	return {}
+func _init(
+	component_relationships_graph: GodDaggerGraph,
+	components_to_objects_graphs: Dictionary,
+	parse_error: String = "",
+) -> void:
+	
+	self._component_relationships_graph = component_relationships_graph
+	self._components_to_objects_graphs = components_to_objects_graphs
+	self._parse_error = parse_error
+
+
+func compile() -> CompiledResult:
+	return GodDaggerParsingResult.compile_results(
+		self._component_relationships_graph,
+		self._components_to_objects_graphs,
+		self._parse_error,
+	)
 
 
 class CompiledResult extends RefCounted:
@@ -17,18 +31,21 @@ class CompiledResult extends RefCounted:
 	var _subcomponents: Array[Subcomponent] = []
 	var _modules: Array[Module] = []
 	var _objects: Array[ObjectType] = []
+	var _parse_error: String
 	
 	func _init(
 		components: Array[Component],
 		subcomponents: Array[Subcomponent],
 		modules: Array[Module],
 		objects: Array[ObjectType],
+		parse_error: String,
 	) -> void:
 		
 		self._components = components
 		self._subcomponents = subcomponents
 		self._modules = modules
 		self._objects = objects
+		self._parse_error = parse_error
 	
 	func get_components() -> Array[Component]:
 		return self._components
@@ -41,6 +58,36 @@ class CompiledResult extends RefCounted:
 	
 	func get_objects() -> Array[ObjectType]:
 		return self._objects
+	
+	func get_parse_error() -> String:
+		if not self._parse_error.is_empty():
+			return self._parse_error
+		
+		for component in self._components:
+			var component_parse_error := component.get_parse_error()
+			
+			if not component_parse_error.is_empty():
+				return "%s: %s" % [component.get_name(), component_parse_error]
+		
+		for subcomponent in self._subcomponents:
+			var subcomponent_parse_error := subcomponent.get_parse_error()
+			
+			if not subcomponent_parse_error.is_empty():
+				return "%s: %s" % [subcomponent.get_name(), subcomponent_parse_error]
+		
+		for module in self._modules:
+			var module_parse_error := module.get_parse_error()
+			
+			if not module_parse_error.is_empty():
+				return "%s: %s" % [module.get_name(), module_parse_error]
+		
+		for object in self._modules:
+			var object_parse_error := object.get_parse_error()
+			
+			if not object_parse_error.is_empty():
+				return "%s: %s" % [object.get_name(), object_parse_error]
+		
+		return ""
 	
 	
 	class ParsedElement extends RefCounted:
@@ -231,15 +278,6 @@ class CompiledResult extends RefCounted:
 			self._scope = scope
 
 
-func compile() -> CompiledResult:
-	var component_relationships_graph: GodDaggerGraph = get_component_relationships_graph()
-	var components_to_objects_graphs: Dictionary = get_components_to_objects_graphs()
-	
-	return GodDaggerParsingResult.compile_results(
-		component_relationships_graph, components_to_objects_graphs,
-	)
-
-
 static func compile_component(
 	component_relationships_graph: GodDaggerGraph,
 	component_to_objects_graph: GodDaggerGraph,
@@ -363,6 +401,7 @@ static func compile_object(
 static func compile_results(
 	component_relationships_graph: GodDaggerGraph,
 	components_to_objects_graphs: Dictionary,
+	parse_error: String,
 ) -> CompiledResult:
 	
 	var components: Array[CompiledResult.Component] = []
@@ -479,5 +518,5 @@ static func compile_results(
 		objects.append(objects_map[object])
 	
 	return CompiledResult.new(
-		components, subcomponents, modules, objects,
+		components, subcomponents, modules, objects, parse_error,
 	)

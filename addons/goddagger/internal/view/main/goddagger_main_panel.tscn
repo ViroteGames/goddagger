@@ -30,7 +30,6 @@ size_flags_vertical = 3
 [node name="DependencyGraphPanel" type="GraphEdit" parent="."]
 layout_mode = 2
 size_flags_vertical = 3
-scroll_offset = Vector2(-300, 0)
 grid_pattern = 1
 minimap_enabled = false
 show_menu = false
