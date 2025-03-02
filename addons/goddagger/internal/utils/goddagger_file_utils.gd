@@ -88,10 +88,11 @@ static func _clone_script_into_generated_directory_renaming_class_name_and_const
 			GodDaggerConstants.KEYWORD_CLASS_NAME,
 			object_class_name,
 		]
-		var renamed_class_name_pattern := "%s %s%s" % [
+		var renamed_class_name_pattern := "%s %s%s%s" % [
 			GodDaggerConstants.KEYWORD_CLASS_NAME,
 			GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX,
 			object_class_name,
+			randi() % 100000,
 		]
 		
 		if file_lines[file_line_index].contains(class_name_pattern):

@@ -81,7 +81,7 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 	
 	error_message = error_message + (" @%s." % resolved_file_path)
 	
-	var cloned_file_name := object_class_name.to_snake_case()
+	var cloned_file_name := object_class_name.to_snake_case() + "%s" % [randi() % 100000]
 	
 	var cloned_object_script := GodDaggerFileUtils \
 		._clone_script_into_generated_directory_renaming_class_name_and_constructor(
