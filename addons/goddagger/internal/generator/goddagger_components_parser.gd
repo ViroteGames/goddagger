@@ -45,6 +45,11 @@ static func _populate_component_objects_graph_by_parsing_arguments(
 					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
 					argument_class,
 				)
+				component_objects_graph.set_tag_to_vertex(
+					object_class_name,
+					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_FILE_PATH_TAG,
+					dependency_file_path,
+				)
 				continue
 		
 		# TODO also a good idea to protect from these instances being any GodDagger type
@@ -357,6 +362,11 @@ static func _populate_component_objects_graph_scope_by_parsing_component_methods
 					component_class_name,
 					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
 					component_scope,
+				)
+				component_relationships_graph.set_tag_to_vertex(
+					component_class_name,
+					GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_FILE_PATH_TAG,
+					dependency_file_path,
 				)
 			else:
 					assert(

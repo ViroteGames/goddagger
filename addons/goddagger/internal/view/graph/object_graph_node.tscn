@@ -1,12 +1,11 @@
-[gd_scene format=3 uid="uid://2gj3nbomc12j"]
+[gd_scene load_steps=2 format=3 uid="uid://2gj3nbomc12j"]
+
+[ext_resource type="Script" uid="uid://badwteu6js6si" path="res://addons/goddagger/internal/view/graph/object_graph_node.gd" id="1_nk24v"]
 
 [node name="ObjectGraphNode" type="GraphNode"]
-offset_left = 764.0
-offset_top = 480.0
-offset_right = 888.0
-offset_bottom = 604.0
+offset_right = 124.0
+offset_bottom = 164.0
 mouse_filter = 1
-position_offset = Vector2(764, 480)
 title = "ElectricHeater"
 slot/0/left_enabled = false
 slot/0/left_type = 0
@@ -35,6 +34,7 @@ slot/2/right_type = 0
 slot/2/right_color = Color(1, 1, 1, 1)
 slot/2/right_icon = null
 slot/2/draw_stylebox = true
+script = ExtResource("1_nk24v")
 
 [node name="DependsOn" type="CodeEdit" parent="."]
 layout_mode = 2
@@ -56,4 +56,3 @@ text = "scoped to"
 editable = false
 selecting_enabled = false
 scroll_fit_content_height = true
-delimiter_strings = Array[String](["\" \"", "' '"])

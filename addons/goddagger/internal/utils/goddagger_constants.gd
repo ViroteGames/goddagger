@@ -8,6 +8,7 @@ const BASE_GODDAGGER_MODULE_NAME := "GodDaggerModule"
 const BASE_GODDAGGER_SCOPE_NAME := "GodDaggerScope"
 
 const GODDAGGER_GRAPH_VERTEX_SCOPE_TAG := "scope"
+const GODDAGGER_GRAPH_VERTEX_SCOPE_FILE_PATH_TAG := "scope_file_path"
 const GODDAGGER_GRAPH_VERTEX_DEFINITION_TAG := "definition"
 const GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG := "file_path"
 
