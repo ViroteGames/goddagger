@@ -1,9 +1,10 @@
 @tool
-class_name GodDaggerMainPanel extends HSplitContainer
+class_name GodDaggerMainPanel extends Control
 
 
 var _property_list: Array[Dictionary] = []
-var _default_values: Dictionary[String, GodDaggerParsingResult.CompiledResult.ParsedElement] = {}
+var _default_values: Dictionary = {}
+var _current_values: Dictionary = {}
 
 
 @onready var _graph_relationships_side_panel: VBoxContainer = %GraphRelationshipsSidePanel
@@ -42,7 +43,7 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 			"type": 		TYPE_NIL,
 			"usage": 		PROPERTY_USAGE_CATEGORY,
 			"hint_string":	"%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
+				GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
 				component.get_name().to_pascal_case(),
 			],
 		})
@@ -51,45 +52,48 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 			"type":			TYPE_NIL,
 			"usage":		PROPERTY_USAGE_GROUP,
 			"hint_string":	"%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
+				GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
 				component.get_name().to_pascal_case(),
 			],
 		})
+		
+		var scope_property_name = "%s%s%s" % [
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
+			component.get_name().to_pascal_case(),
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_SCOPE_SUFIX,
+		]
 		_property_list.append({
-			"name":			"%s%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
-				component.get_name().to_pascal_case(),
-				"Scope",
-			],
-			"type":			TYPE_STRING,
+			"name":			scope_property_name,
+			"type":			TYPE_OBJECT,
+			"usage":		PROPERTY_USAGE_DEFAULT,
+			"hint_string":	GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME,
+		})
+		_default_values[scope_property_name] = component.get_scope()
+		
+		var modules_property_name = "%s%s%s" % [
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
+			component.get_name().to_pascal_case(),
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_MODULES_SUFIX,
+		]
+		_property_list.append({
+			"name":			modules_property_name,
+			"type":			TYPE_ARRAY,
+			"usage":		PROPERTY_USAGE_DEFAULT,
+			"hint_string":	GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME,
+		})
+		_default_values[modules_property_name] = component.get_modules()
+		
+		var exposed_dependencies_property_name = "%s%s%s" % [
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
+			component.get_name().to_pascal_case(),
+			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_EXPOSED_DEPENDENCIES_SUFIX,
+		]
+		_property_list.append({
+			"name":			exposed_dependencies_property_name,
+			"type":			TYPE_ARRAY,
 			"usage":		PROPERTY_USAGE_DEFAULT,
 		})
-		set(
-			"%s%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
-				component.get_name().to_pascal_case(),
-				"Scope",
-			],
-			component.get_scope(),
-		)
-		_property_list.append({
-			"name":			"%s%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
-				component.get_name().to_pascal_case(),
-				"Modules",
-			],
-			"type":			TYPE_STRING,
-			"usage":		PROPERTY_USAGE_DEFAULT,
-		})
-		_property_list.append({
-			"name":			"%s%s%s" % [
-				GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX,
-				component.get_name().to_pascal_case(),
-				"ExposedObjects",
-			],
-			"type":			TYPE_STRING,
-			"usage":		PROPERTY_USAGE_DEFAULT,
-		})
+		_default_values[exposed_dependencies_property_name] = component.get_exposed_dependencies()
 	
 	for subcomponent in parsing_result.get_subcomponents():
 		var subcomponent_item_view := SidePanelDetailsItem.Subcomponent.spawn(subcomponent)
@@ -112,8 +116,29 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 		_dependency_graph_panel.add_child(object_node_view)
 		_dependency_graph_panel.move_child(object_node_view, 0)
 	
+	_current_values = _default_values.duplicate()
 	notify_property_list_changed()
 	EditorInterface.get_inspector().edit(self)
+
+
+func _is_relevant_property(property_name: StringName) -> bool:
+	return property_name.begins_with(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX)
+
+
+func _get(property_name: StringName) -> Variant:
+	if _is_relevant_property(property_name):
+		return _current_values[property_name]
+	
+	return null
+
+
+func _set(property_name: StringName, value: Variant) -> bool:
+	var is_relevant_property := _is_relevant_property(property_name)
+	
+	if is_relevant_property:
+		_current_values[property_name] = value
+	
+	return is_relevant_property
 
 
 func _get_property_list() -> Array[Dictionary]:
@@ -121,8 +146,11 @@ func _get_property_list() -> Array[Dictionary]:
 
 
 func _property_can_revert(property_name: StringName) -> bool:
-	return property_name.begins_with(GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX)
+	return _is_relevant_property(property_name)
 
 
-#func _property_get_revert(property: StringName) -> Variant:
-#	
+func _property_get_revert(property_name: StringName) -> Variant:
+	if _is_relevant_property(property_name) and _default_values.has(property_name):
+		return _default_values[property_name]
+	
+	return null

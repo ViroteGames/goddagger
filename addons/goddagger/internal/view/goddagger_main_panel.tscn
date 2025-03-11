@@ -3,39 +3,48 @@
 [ext_resource type="Theme" uid="uid://cxkk5560iym3g" path="res://addons/goddagger/internal/view/goddager_panel_theme.tres" id="1_u83of"]
 [ext_resource type="Script" uid="uid://ddao6b0v8q518" path="res://addons/goddagger/internal/view/goddagger_main_panel.gd" id="2_0pwjf"]
 
-[node name="GodDaggerMainPanel" type="HSplitContainer"]
+[node name="GodDaggerMainPanel" type="MarginContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme = ExtResource("1_u83of")
-split_offset = 300
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 script = ExtResource("2_0pwjf")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+layout_mode = 2
+split_offset = 300
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HSplitContainer"]
 layout_mode = 2
 vertical_scroll_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="HSplitContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="GraphRelationshipsSidePanel" type="VBoxContainer" parent="ScrollContainer/MarginContainer"]
+[node name="GraphRelationshipsSidePanel" type="VBoxContainer" parent="HSplitContainer/ScrollContainer/MarginContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="GraphEdit" type="GraphEdit" parent="."]
+[node name="GraphEdit" type="GraphEdit" parent="HSplitContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+scroll_offset = Vector2(-30, -30)
 grid_pattern = 1
 minimap_enabled = false
 show_menu = false
 
-[node name="DependencyGraphPanel" type="GridContainer" parent="GraphEdit"]
+[node name="DependencyGraphPanel" type="GridContainer" parent="HSplitContainer/GraphEdit"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8

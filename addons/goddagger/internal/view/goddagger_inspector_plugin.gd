@@ -3,34 +3,107 @@ class_name GodDaggerInspectorPlugin extends EditorInspectorPlugin
 
 
 func _can_handle(object: Object) -> bool:
-	return true
+	return object is GodDaggerMainPanel
 
 
 func _parse_property(
 	object: Object,
 	type: Variant.Type,
-	name: String,
+	property_name: String,
 	hint_type: PropertyHint,
 	hint_string: String,
 	usage_flags: int,
 	wide: bool,
 ) -> bool:
 	
-	if name.begins_with(GodDaggerConstants.RENAMED_GODDAGGER_TOKEN_PREFIX):
-		print("object: %s, type: %s, name: %s, hint_type: %s, hint_string: %s" % [
-			object, type, name, hint_type, hint_string,
-		])
-		
-		add_property_editor(name, ScopeEditorProperty.new())
-		return true
+	if not property_name.begins_with(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX):
+		return false
+	
+	match hint_string:
+		GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME:
+			add_property_editor(property_name, ScopeEditorProperty.new())
+			return true
+		GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME:
+			add_property_editor(property_name, ModulesEditorProperty.new())
+			return true
+		_:
+			add_property_editor(property_name, ExposedDependenciesEditorProperty.new())
+			return true
 	
 	return false
 
 
-class ScopeEditorProperty extends EditorProperty:
+class ScopeEditorProperty extends GodDaggerEditorProperty:
+	
+	var _current_value: GodDaggerParsingResult.CompiledResult.Scope
+	
+	func _on_update_property() -> void:
+		_current_value = null
+	
+	func _get_current_value() -> Variant:
+		return _current_value
+	
+	func _set_current_value(value: Variant) -> void:
+		_current_value = value
+	
+	func _get_updated_control_text() -> String:
+		if _current_value is GodDaggerParsingResult.CompiledResult.CompiledElement:
+			return _current_value.get_name()
+		else:
+			return "<Unscoped>"
+
+
+class ModulesEditorProperty extends GodDaggerEditorProperty:
+	
+	var _current_value: Array[GodDaggerParsingResult.CompiledResult.Module] = []
+	
+	func _on_update_property() -> void:
+		_current_value = []
+	
+	func _get_current_value() -> Variant:
+		return _current_value
+	
+	func _set_current_value(value: Variant) -> void:
+		_current_value = value
+	
+	func _get_updated_control_text() -> String:
+		if not _current_value.is_empty():
+			return ", ".join(
+				_current_value.map(
+					func(module): return module.get_name()
+				)
+			)
+		else:
+			return "<No Module>"
+
+
+class ExposedDependenciesEditorProperty extends GodDaggerEditorProperty:
+	
+	var _current_value: Array[GodDaggerParsingResult.CompiledResult.Dependency] = []
+	
+	func _on_update_property() -> void:
+		_current_value = []
+	
+	func _get_current_value() -> Variant:
+		return _current_value
+	
+	func _set_current_value(value: Variant) -> void:
+		_current_value = value
+	
+	func _get_updated_control_text() -> String:
+		if not _current_value.is_empty():
+			return ", ".join(
+				_current_value.map(
+					func(dependency): return dependency.get_name()
+				)
+			)
+		else:
+			return "<No Dependencies>"
+
+
+class GodDaggerEditorProperty extends EditorProperty:
 	
 	var _property_control := Button.new()
-	var _current_value = null
 	var _updating := false
 	
 	func _init() -> void:
@@ -44,9 +117,18 @@ class ScopeEditorProperty extends EditorProperty:
 		if _updating:
 			return
 		
-		_current_value = RootScope.new()
+		_on_update_property()
 		_refresh_control_text()
-		emit_changed(get_edited_property(), _current_value)
+		emit_changed(get_edited_property(), _get_current_value())
+	
+	func _on_update_property() -> void:
+		pass
+	
+	func _get_current_value() -> Variant:
+		return null
+	
+	func _set_current_value(value: Variant) -> void:
+		pass
 	
 	func _update_property() -> void:
 		var edited_object = get_edited_object()
@@ -58,19 +140,23 @@ class ScopeEditorProperty extends EditorProperty:
 			[var object, var property] when not property in object:
 				return
 		
+		var current_value = _get_current_value()
 		var new_value = edited_object[edited_property]
 		
-		match [_current_value, new_value]:
+		match [current_value, new_value]:
 			[_, null]:
 				return
 			[var current, var new] when current == new:
 				return
 		
 		_updating = true
-		_current_value = new_value
+		
+		_set_current_value(new_value)
 		_refresh_control_text()
 		_updating = false
 	
 	func _refresh_control_text() -> void:
-		print(_current_value)
-		_property_control.text = _current_value.get_class() if _current_value != null else "Unscoped"
+		_property_control.text = _get_updated_control_text()
+	
+	func _get_updated_control_text() -> String:
+		return ""
