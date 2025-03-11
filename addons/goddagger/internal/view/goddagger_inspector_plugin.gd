@@ -21,13 +21,13 @@ func _parse_property(
 	
 	match hint_string:
 		GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME:
-			add_property_editor(property_name, ScopeEditorProperty.new())
+			add_property_editor(property_name, ScopeEditorProperty.new(false))
 			return true
 		GodDaggerConstants.BASE_GODDAGGER_MODULE_NAME:
-			add_property_editor(property_name, ModulesEditorProperty.new())
+			add_property_editor(property_name, ModulesEditorProperty.new(false))
 			return true
 		_:
-			add_property_editor(property_name, ExposedDependenciesEditorProperty.new())
+			add_property_editor(property_name, ExposedDependenciesEditorProperty.new(true))
 			return true
 	
 	return false
@@ -103,15 +103,25 @@ class ExposedDependenciesEditorProperty extends GodDaggerEditorProperty:
 
 class GodDaggerEditorProperty extends EditorProperty:
 	
+	var _container := VBoxContainer.new()
 	var _property_control := Button.new()
 	var _updating := false
 	
-	func _init() -> void:
-		add_child(_property_control)
-		set_bottom_editor(_property_control)
+	func _init(expand_bottom: bool) -> void:
+		_container.add_child(_property_control)
+		
+		add_child(_container)
+		set_bottom_editor(_container)
 		add_focusable(_property_control)
 		_refresh_control_text()
 		_property_control.pressed.connect(_on_button_pressed)
+		
+		if expand_bottom:
+			var rect := TextureRect.new()
+			rect.set_size(Vector2(2000, 2000), true)
+			rect.custom_minimum_size = Vector2(0, 2000)
+			_container.add_child(rect)
+			#set_bottom_editor(v_separator)
 	
 	func _on_button_pressed() -> void:
 		if _updating:

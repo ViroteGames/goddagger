@@ -94,6 +94,12 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 			"usage":		PROPERTY_USAGE_DEFAULT,
 		})
 		_default_values[exposed_dependencies_property_name] = component.get_exposed_dependencies()
+		
+		_property_list.append({
+			"name":			"script",
+			"type":			TYPE_OBJECT,
+			"usage":		PROPERTY_USAGE_NO_EDITOR,
+		})
 	
 	for subcomponent in parsing_result.get_subcomponents():
 		var subcomponent_item_view := SidePanelDetailsItem.Subcomponent.spawn(subcomponent)
@@ -154,3 +160,16 @@ func _property_get_revert(property_name: StringName) -> Variant:
 		return _default_values[property_name]
 	
 	return null
+
+
+func _validate_property(property: Dictionary) -> void:
+	if property.name.contains(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX):
+		print("I'm keeping this property: %s" % property.name)
+		return
+	elif property.hint_string.contains(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX):
+		print("I'm keeping this property: %s" % property.name)
+		return
+	
+	print("I'm trying to hide this property: %s" % property.name)
+	
+	property.usage = PROPERTY_USAGE_NO_EDITOR
