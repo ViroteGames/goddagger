@@ -42,7 +42,7 @@ func _parse_property(
 				add_property_editor(property_name, ModulesEditorProperty.new())
 			return true
 		GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME:
-			add_property_editor(property_name, ScopeEditorProperty.new())
+			add_property_editor(property_name, ScopeEditorProperty.new(false))
 			return true
 		_:
 			if is_property_for_summary:
@@ -318,6 +318,13 @@ class GodDaggerEditorProperty extends EditorProperty:
 		add_focusable(_property_control)
 		_refresh_control_text()
 		_property_control.pressed.connect(_on_button_pressed)
+		
+		if expand_bottom:
+			var rect := TextureRect.new()
+			rect.set_size(Vector2(2000, 2000), true)
+			rect.custom_minimum_size = Vector2(0, 2000)
+			_container.add_child(rect)
+			#set_bottom_editor(v_separator)
 	
 	func _on_button_pressed() -> void:
 		if _updating:
