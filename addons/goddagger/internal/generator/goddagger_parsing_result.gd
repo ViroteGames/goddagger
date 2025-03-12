@@ -161,10 +161,15 @@ class CompiledResult extends RefCounted:
 		func add_exposed_dependency(dependency_name: String) -> void:
 			self._exposed_dependencies.append(dependency_name)
 		
-		func precompile() -> Component:
+		func precompile(
+			ordered_dependency_names: Array,
+			dependencies_map: Dictionary[String, Dependency],
+		) -> Component:
 			var component := Component.new(
 				self._name,
 				self._file_path,
+				ordered_dependency_names,
+				dependencies_map,
 				self._parse_error,
 			)
 			component.set_scope(self._scope)
@@ -176,6 +181,19 @@ class CompiledResult extends RefCounted:
 		var _scope: Scope
 		var _modules: Array[Module]
 		var _exposed_dependencies: Array[Dependency]
+		var _topologically_ordered_graph: Array[Dependency]
+		
+		func _init(
+			name: String,
+			file_path: String,
+			ordered_dependency_names: Array,
+			dependencies_map: Dictionary[String, Dependency],
+			parse_error: String = "",
+		) -> void:
+			super._init(name, file_path, parse_error)
+			
+			for dependency_name in ordered_dependency_names:
+				_topologically_ordered_graph.append(dependencies_map[dependency_name])
 		
 		func get_scope() -> Scope:
 			return self._scope
@@ -194,6 +212,12 @@ class CompiledResult extends RefCounted:
 		
 		func add_exposed_dependency(dependency: Dependency) -> void:
 			self._exposed_dependencies.append(dependency)
+		
+		func get_topologically_ordered_graph() -> Array[Dependency]:
+			return self._topologically_ordered_graph
+		
+		func set_topologically_ordered_graph(graph: Array[Dependency]) -> void:
+			self._topologically_ordered_graph = graph
 	
 	
 	class Presubcomponent extends Precomponent:
@@ -206,10 +230,15 @@ class CompiledResult extends RefCounted:
 		func add_linked_parent(parent_component: LinkedParentPrecomponent) -> void:
 			self._linked_parent_components.append(parent_component)
 		
-		func precompile() -> Subcomponent:
+		func precompile(
+			ordered_dependency_names: Array,
+			dependencies_map: Dictionary[String, Dependency],
+		) -> Subcomponent:
 			var subcomponent := Subcomponent.new(
 				self._name,
 				self._file_path,
+				ordered_dependency_names,
+				dependencies_map,
 				self._parse_error,
 			)
 			subcomponent.set_scope(self._scope)
@@ -241,6 +270,18 @@ class CompiledResult extends RefCounted:
 		func add_linked_parent(parent_component: LinkedParentComponent) -> void:
 			self._linked_parent_components.append(parent_component)
 		
+		func is_dependency_inherited(dependency: Dependency) -> bool:
+			for linked_parent in _linked_parent_components:
+				var component = linked_parent.get_component()
+				
+				if component.get_topologically_ordered_graph().has(dependency):
+					return true
+				
+				elif component is Subcomponent:
+					if component.is_dependency_inherited(dependency):
+						return true
+			
+			return false
 		
 		class LinkedParentComponent extends RefCounted:
 			
@@ -616,7 +657,7 @@ static func _parse_elements(
 	presubcomponents_map: Dictionary[String, CompiledResult.Presubcomponent],
 	ordered_module_names: Array[String],
 	premodules_map: Dictionary[String, CompiledResult.Premodule],
-	ordered_dependency_names: Array[String],
+	ordered_dependency_names: Dictionary[String, Array],
 	predependencies_map: Dictionary[String, CompiledResult.Predependency],
 ) -> void:
 	
@@ -662,15 +703,18 @@ static func _parse_elements(
 	for component_name in components_to_dependencies_graphs.keys():
 		var dependencies_graph: GodDaggerGraph = components_to_dependencies_graphs[component_name]
 		
+		ordered_dependency_names[component_name] = []
+		
 		for dependency_name in dependencies_graph.get_topological_order():
 			if component_relationships_graph.has_graph_vertex(dependency_name):
 				continue
+			
+			ordered_dependency_names[component_name].append(dependency_name)
 			
 			# TODO if dependency has different qualifier, let it be processed here!
 			if predependencies_map.has(dependency_name):
 				continue
 			
-			ordered_dependency_names.append(dependency_name)
 			predependencies_map[dependency_name] = _parse_dependency(
 				component_relationships_graph,
 				components_to_dependencies_graphs[component_name],
@@ -680,42 +724,47 @@ static func _parse_elements(
 
 
 static func _compile_dependencies_and_modules(
-	ordered_dependency_names: Array[String],
+	ordered_dependency_names: Dictionary[String, Array],
 	predependencies_map: Dictionary[String, CompiledResult.Predependency],
 	dependencies_map: Dictionary[String, CompiledResult.Dependency],
 	premodules_map: Dictionary[String, CompiledResult.Premodule],
 	modules_map: Dictionary[String, CompiledResult.Module],
 ) -> void:
 	
-	for object_name in ordered_dependency_names:
-		var preobject: CompiledResult.Predependency = predependencies_map[object_name]
-		var object: CompiledResult.Dependency = preobject.precompile()
-		
-		dependencies_map[object_name] = object
-		
-		for dependency_name in preobject.get_dependencies():
-			object.add_dependency(dependencies_map[dependency_name])
-		
-		var provision_module_name: String = preobject.get_provision_module()
-		
-		if provision_module_name:
-			var premodule: CompiledResult.Premodule = premodules_map[provision_module_name]
+	for component_name in ordered_dependency_names.keys():
+		for object_name in ordered_dependency_names[component_name]:
+			# TODO if dependency has different qualifier, let it be processed here!
+			if dependencies_map.has(object_name):
+				continue
 			
-			if not modules_map.has(provision_module_name):
-				modules_map[provision_module_name] = premodule.precompile()
+			var preobject: CompiledResult.Predependency = predependencies_map[object_name]
+			var object: CompiledResult.Dependency = preobject.precompile()
 			
-			var module: CompiledResult.Module = modules_map[provision_module_name]
+			dependencies_map[object_name] = object
 			
-			for preprovision in premodule.get_provisions():
-				if preprovision.get_name() == object_name:
-					var provision := CompiledResult.Module.Provision.new(object)
-					provision.set_scope(preprovision.get_scope())
-					
-					for dependency_name in preprovision.get_dependencies():
-						provision.add_dependency(dependencies_map[dependency_name])
-					
-					module.add_provision(provision)
-					object.set_provision_module(module)
+			for dependency_name in preobject.get_dependencies():
+				object.add_dependency(dependencies_map[dependency_name])
+			
+			var provision_module_name: String = preobject.get_provision_module()
+			
+			if provision_module_name:
+				var premodule: CompiledResult.Premodule = premodules_map[provision_module_name]
+				
+				if not modules_map.has(provision_module_name):
+					modules_map[provision_module_name] = premodule.precompile()
+				
+				var module: CompiledResult.Module = modules_map[provision_module_name]
+				
+				for preprovision in premodule.get_provisions():
+					if preprovision.get_name() == object_name:
+						var provision := CompiledResult.Module.Provision.new(object)
+						provision.set_scope(preprovision.get_scope())
+						
+						for dependency_name in preprovision.get_dependencies():
+							provision.add_dependency(dependencies_map[dependency_name])
+						
+						module.add_provision(provision)
+						object.set_provision_module(module)
 
 
 static func _compile_components(
@@ -724,12 +773,15 @@ static func _compile_components(
 	components_map: Dictionary[String, CompiledResult.Component],
 	premodules_map: Dictionary[String, CompiledResult.Premodule],
 	modules_map: Dictionary[String, CompiledResult.Module],
+	ordered_dependency_names: Dictionary[String, Array],
 	dependencies_map: Dictionary[String, CompiledResult.Dependency],
 ) -> void:
 	
 	for component_name in ordered_component_names:
 		var precomponent: CompiledResult.Precomponent = precomponents_map[component_name]
-		var component: CompiledResult.Component = precomponent.precompile()
+		var component: CompiledResult.Component = precomponent.precompile(
+			ordered_dependency_names[component_name], dependencies_map,
+		)
 		
 		for module_name in precomponent.get_modules():
 			if not modules_map.has(module_name):
@@ -752,13 +804,16 @@ static func _compile_subcomponents(
 	components_map: Dictionary[String, CompiledResult.Component],
 	premodules_map: Dictionary[String, CompiledResult.Premodule],
 	modules_map: Dictionary[String, CompiledResult.Module],
+	ordered_dependency_names: Dictionary[String, Array],
 	dependencies_map: Dictionary[String, CompiledResult.Dependency],
 ) -> void:
 	
 	for subcomponent_name in ordered_subcomponent_names:
 		var presubcomponent: CompiledResult.Presubcomponent = \
 			presubcomponents_map[subcomponent_name]
-		var subcomponent: CompiledResult.Subcomponent = presubcomponent.precompile()
+		var subcomponent: CompiledResult.Subcomponent = presubcomponent.precompile(
+			ordered_dependency_names[subcomponent_name], dependencies_map,
+		)
 		
 		for module_name in presubcomponent.get_modules():
 			if not modules_map.has(module_name):
@@ -800,7 +855,7 @@ static func _compile_elements(
 	ordered_module_names: Array[String],
 	premodules_map: Dictionary[String, CompiledResult.Premodule],
 	modules_map: Dictionary[String, CompiledResult.Module],
-	ordered_dependency_names: Array[String],
+	ordered_dependency_names: Dictionary[String, Array],
 	predependencies_map: Dictionary[String, CompiledResult.Predependency],
 	dependencies_map: Dictionary[String, CompiledResult.Dependency],
 ) -> void:
@@ -812,12 +867,12 @@ static func _compile_elements(
 	
 	_compile_components(
 		ordered_component_names, precomponents_map, components_map,
-		premodules_map, modules_map, dependencies_map,
+		premodules_map, modules_map, ordered_dependency_names, dependencies_map,
 	)
 	
 	_compile_subcomponents(
 		ordered_subcomponent_names, presubcomponents_map, subcomponents_map,
-		components_map, premodules_map, modules_map, dependencies_map,
+		components_map, premodules_map, modules_map, ordered_dependency_names, dependencies_map,
 	)
 
 
@@ -830,7 +885,7 @@ static func _compile_results(
 	var ordered_component_names: Array[String] = []
 	var ordered_subcomponent_names: Array[String] = []
 	var ordered_module_names: Array[String] = []
-	var ordered_dependency_names: Array[String] = []
+	var ordered_dependency_names: Dictionary[String, Array] = {}
 	
 	var precomponents_map: Dictionary[String, CompiledResult.Precomponent] = {}
 	var presubcomponents_map: Dictionary[String, CompiledResult.Presubcomponent] = {}
@@ -870,15 +925,19 @@ static func _compile_results(
 	ordered_module_names.map(
 		func(name): ordered_modules.append(modules_map[name])
 	)
-	var ordered_dependencies: Array[CompiledResult.Dependency] = []
-	ordered_dependency_names.map(
-		func(name): ordered_dependencies.append(dependencies_map[name])
-	)
+	var all_dependencies: Array[CompiledResult.Dependency] = []
+	for component_name in ordered_dependency_names.keys():
+		ordered_dependency_names[component_name].map(
+			func(name):
+				var dependency := dependencies_map[name]
+				if not all_dependencies.has(dependency):
+					all_dependencies.append(dependency)
+		)
 	
 	return CompiledResult.new(
 		ordered_components,
 		ordered_subcomponents,
 		ordered_modules,
-		ordered_dependencies,
+		all_dependencies,
 		parse_error,
 	)
