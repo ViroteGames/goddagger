@@ -165,7 +165,7 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_relationships_graph: GodDaggerGraph,
-	components_to_objects_graphs: Dictionary,
+	components_to_objects_graphs: Dictionary[String, GodDaggerGraph],
 	component_objects_graph: GodDaggerGraph,
 	module_class_name: String,
 	property: Dictionary,
@@ -231,7 +231,7 @@ static func _populate_component_objects_graph_by_parsing_module(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_relationships_graph: GodDaggerGraph,
-	components_to_objects_graphs: Dictionary,
+	components_to_objects_graphs: Dictionary[String, GodDaggerGraph],
 	component_objects_graph: GodDaggerGraph,
 	module_class_name: String,
 ) -> void:
@@ -269,7 +269,7 @@ static func _populate_graphs_by_parsing_component_property(
 	module_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	subcomponent_classes: Array[GodDaggerBaseResolver.ResolvedClass],
 	component_relationships_graph: GodDaggerGraph,
-	components_to_objects_graphs: Dictionary,
+	components_to_objects_graphs: Dictionary[String, GodDaggerGraph],
 	component_class_name: String,
 	property: Dictionary,
 ) -> void:
@@ -381,7 +381,7 @@ static func _populate_component_objects_graph_scope_by_parsing_component_methods
 
 static func _build_dependency_graph_by_parsing_project_files() -> GodDaggerParsingResult:
 	var component_relationships_graph := GodDaggerGraph.new("Component Relationships Graph")
-	var components_to_objects_graphs: Dictionary = {}
+	var components_to_objects_graphs: Dictionary[String, GodDaggerGraph] = {}
 	
 	if not GodDaggerFileUtils._clear_generated_files():
 		return GodDaggerParsingResult.new(
