@@ -2,13 +2,13 @@ class_name GodDaggerParsingResult extends RefCounted
 
 
 var _component_relationships_graph: GodDaggerGraph
-var _components_to_dependencies_graphs: Dictionary
+var _components_to_dependencies_graphs: Dictionary[String, GodDaggerGraph]
 var _parse_error: String
 
 
 func _init(
 	component_relationships_graph: GodDaggerGraph,
-	components_to_dependencies_graphs: Dictionary,
+	components_to_dependencies_graphs: Dictionary[String, GodDaggerGraph],
 	parse_error: String = "",
 ) -> void:
 	
@@ -878,7 +878,7 @@ static func _compile_elements(
 
 static func _compile_results(
 	component_relationships_graph: GodDaggerGraph,
-	components_to_dependencies_graphs: Dictionary,
+	components_to_dependencies_graphs: Dictionary[String, GodDaggerGraph],
 	parse_error: String,
 ) -> CompiledResult:
 	
@@ -934,6 +934,9 @@ static func _compile_results(
 					all_dependencies.append(dependency)
 		)
 	
+	print_minimum_levels(ordered_components)
+	print_minimum_levels(ordered_subcomponents)
+	
 	return CompiledResult.new(
 		ordered_components,
 		ordered_subcomponents,
@@ -941,3 +944,32 @@ static func _compile_results(
 		all_dependencies,
 		parse_error,
 	)
+
+
+static func print_minimum_levels(ordered_elements: Array) -> void:
+	var minimum_levels: Dictionary[String, Dictionary]
+	
+	for component in ordered_elements:
+		minimum_levels[component.get_name()] = {}
+		
+		for object in component.get_topologically_ordered_graph():
+			if object.get_dependencies().is_empty():
+				if not object.get_name() in minimum_levels:
+					minimum_levels[component.get_name()][object.get_name()] = 0
+					print("%s: MIN LEVEL OF %s IS: %s" % [
+						component.get_name(),
+						object.get_name(),
+						minimum_levels[component.get_name()][object.get_name()],
+					])
+			else:
+				var minimum_level = minimum_levels[component.get_name()]
+				var maximum_level_of_dependencies = 0
+				for dependency in object.get_dependencies():
+					var dependency_minimum_level = minimum_level[dependency.get_name()]
+					if dependency_minimum_level > maximum_level_of_dependencies:
+						maximum_level_of_dependencies = dependency_minimum_level
+				minimum_level[object.get_name()] = max(0, maximum_level_of_dependencies + 1)
+				print("%s: MIN LEVEL OF %s IS: %s" % [
+					component.get_name(), object.get_name(),
+					minimum_level[object.get_name()],
+				])
