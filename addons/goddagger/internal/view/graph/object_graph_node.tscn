@@ -6,7 +6,7 @@
 offset_right = 124.0
 offset_bottom = 164.0
 mouse_filter = 1
-title = "ElectricHeater"
+title = "GraphNode"
 slot/0/left_enabled = false
 slot/0/left_type = 0
 slot/0/left_color = Color(0.897974, 0.627699, 0.213504, 1)

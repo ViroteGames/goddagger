@@ -4,54 +4,17 @@
 [ext_resource type="Script" uid="uid://ddao6b0v8q518" path="res://addons/goddagger/internal/view/goddagger_main_panel.gd" id="2_0pwjf"]
 
 [node name="GodDaggerMainPanel" type="GraphEdit"]
-name = &"GodDaggerMainPanel"
-scene_file_path = "res://addons/goddagger/internal/view/goddagger_main_panel.tscn"
-owner = null
-multiplayer = Object(SceneMultiplayer,"root_path":NodePath("/root"),"auth_callback":Callable(),"auth_timeout":3.0,"allow_object_decoding":false,"refuse_new_connections":false,"server_relay":true,"max_sync_packet_size":1350,"max_delta_packet_size":65535,"script":null)
-
-Process = null
-"Thread Group" = null
-process_thread_group_order = 0
-process_thread_messages = 0
-"Physics Interpolation" = null
-"Auto Translate" = null
 auto_translate_mode = 1
-"Editor Description" = null
-Visibility = null
-Ordering = null
-Texture = null
-Material = null
-Layout = null
 anchors_preset = 15
-"Anchor Points" = null
 anchor_right = 1.0
 anchor_bottom = 1.0
-"Anchor Offsets" = null
-offset_right = 6912.0
-offset_bottom = 3888.0
-"Grow Direction" = null
+offset_right = 8064.0
+offset_bottom = 4536.0
 grow_horizontal = 2
 grow_vertical = 2
-Transform = null
-size = Vector2(8064, 4536)
-global_position = Vector2(0, 0)
-rotation_degrees = 0.0
-"Container Sizing" = null
 size_flags_horizontal = 3
 size_flags_vertical = 3
-Localization = null
-auto_translate = true
-Tooltip = null
-Focus = null
-Mouse = null
-Input = null
-Theme = null
 theme = ExtResource("1_u83of")
-scroll_offset = Vector2(-1152, -648)
-"Connection Lines" = null
-Zoom = null
-Minimap = null
-"Toolbar Menu" = null
 script = ExtResource("2_0pwjf")
 _property_list = Array[Dictionary]([])
 _default_values = {}
