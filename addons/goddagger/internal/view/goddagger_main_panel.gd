@@ -1,13 +1,12 @@
 @tool
-class_name GodDaggerMainPanel extends Control
+class_name GodDaggerMainPanel extends GraphEdit
 
 
 var _property_list: Array[Dictionary] = []
 var _default_values: Dictionary = {}
 var _current_values: Dictionary = {}
 
-
-@onready var _dependency_graph_panel: GridContainer = %DependencyGraphPanel
+var _dependency_graph_panel := DependencyGraphPanel.new(self)
 
 
 func _react_to_main_screen_change(screen_name: String) -> void:
@@ -19,29 +18,95 @@ func _react_to_main_screen_change(screen_name: String) -> void:
 			._build_dependency_graph_by_parsing_project_files()
 			._compile(),
 	)
+	
+	var uno := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Uno", "file_path",
+	)
+	var dos := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Dos", "file_path",
+	)
+	var tres := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Tres", "file_path",
+	)
+	var cuatro := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Cuatro", "file_path",
+	)
+	var cinco := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Cinco", "file_path",
+	)
+	var seis := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Seis", "file_path",
+	)
+	var siete := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Siete", "file_path",
+	)
+	var ocho := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Ocho", "file_path",
+	)
+	var nueve := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Nueve", "file_path",
+	)
+	var diez := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Diez", "file_path",
+	)
+	var once := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Once", "file_path",
+	)
+	var doce := GodDaggerParsingResult.CompiledResult.Dependency.new(
+		"Doce", "file_path",
+	)
+	
+	uno.add_dependency(tres)
+	uno.add_dependency(cuatro)
+	dos.add_dependency(seis)
+	tres.add_dependency(dos)
+	tres.add_dependency(siete)
+	tres.add_dependency(ocho)
+	cuatro.add_dependency(cinco)
+	cuatro.add_dependency(seis)
+	cuatro.add_dependency(ocho)
+	cuatro.add_dependency(nueve)
+	seis.add_dependency(diez)
+	siete.add_dependency(diez)
+	siete.add_dependency(once)
+	ocho.add_dependency(siete)
+	nueve.add_dependency(once)
+	diez.add_dependency(doce)
+	once.add_dependency(doce)
+	
+	var component = GodDaggerParsingResult.CompiledResult.Component.new(
+		"name", "file_path",
+		[
+			"12", "11", "10", "09", "07", "06", "08", "05", "02", "03", "04", "01",
+		],
+		{
+			"01": uno,
+			"02": dos,
+			"03": tres,
+			"04": cuatro,
+			"05": cinco,
+			"06": seis,
+			"07": siete,
+			"08": ocho,
+			"09": nueve,
+			"10": diez,
+			"11": once,
+			"12": doce,
+		}
+	)
 
 
 func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.CompiledResult) -> void:
 	_property_list.clear()
-	
-	for child in _dependency_graph_panel.get_children():
-		_dependency_graph_panel.remove_child(child)
-		child.queue_free()
+	_dependency_graph_panel.clear()
 	
 	for component in parsing_result.get_components():
 		_populate_property_list_for_component(component)
+		_dependency_graph_panel.draw_graph_for_component(component)
 	
 	for subcomponent in parsing_result.get_subcomponents():
 		_populate_property_list_for_component(subcomponent)
-	
-	var objects_in_reverse_order: Array[GodDaggerParsingResult.CompiledResult.Dependency] = \
-		parsing_result.get_dependencies().duplicate()
-	objects_in_reverse_order.reverse()
-	
-	for object in objects_in_reverse_order:
-		var object_node_view := ObjectGraphNode.spawn(object.get_name())
-		_dependency_graph_panel.add_child(object_node_view)
-		_dependency_graph_panel.move_child(object_node_view, 0)
+		_dependency_graph_panel.draw_graph_for_component(subcomponent)
 	
 	_current_values = _default_values.duplicate()
 	notify_property_list_changed()
@@ -384,4 +449,4 @@ func _validate_property(property: Dictionary) -> void:
 	elif property.hint_string.contains(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX):
 		return
 	
-	property.usage = PROPERTY_USAGE_NO_EDITOR
+	#property.usage = PROPERTY_USAGE_NO_EDITOR

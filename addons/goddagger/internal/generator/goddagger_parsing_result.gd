@@ -162,7 +162,7 @@ class CompiledResult extends RefCounted:
 			self._exposed_dependencies.append(dependency_name)
 		
 		func precompile(
-			ordered_dependency_names: Array,
+			ordered_dependency_names: Array[String],
 			dependencies_map: Dictionary[String, Dependency],
 		) -> Component:
 			var component := Component.new(
@@ -186,7 +186,7 @@ class CompiledResult extends RefCounted:
 		func _init(
 			name: String,
 			file_path: String,
-			ordered_dependency_names: Array,
+			ordered_dependency_names: Array[String],
 			dependencies_map: Dictionary[String, Dependency],
 			parse_error: String = "",
 		) -> void:
@@ -231,7 +231,7 @@ class CompiledResult extends RefCounted:
 			self._linked_parent_components.append(parent_component)
 		
 		func precompile(
-			ordered_dependency_names: Array,
+			ordered_dependency_names: Array[String],
 			dependencies_map: Dictionary[String, Dependency],
 		) -> Subcomponent:
 			var subcomponent := Subcomponent.new(
@@ -501,6 +501,49 @@ class CompiledResult extends RefCounted:
 		
 		func set_scope(scope: Scope) -> void:
 			self._scope = scope
+	
+	
+	class DependencyArray extends RefCounted:
+		
+		var _array: Array[Dependency] = []
+		
+		func _init(array: Array[Dependency] = []) -> void:
+			self._array = array
+		
+		func add_dependency(dependency: Dependency) -> void:
+			self._array.append(dependency)
+		
+		func map(method: Callable) -> Array:
+			return self._array.map(method)
+		
+		func get_dependency_at(index: int) -> Dependency:
+			return self._array[index]
+		
+		func size() -> int:
+			return _array.size()
+		
+		func _iter_init(holder: Array) -> bool:
+			if _array.is_empty():
+				return false
+			
+			var current_position := 0
+			var current_value: Dependency = _array[current_position]
+			
+			holder[0] = [current_position, current_value]
+			return true
+		
+		func _iter_next(holder: Array) -> bool:
+			var next_position: int = holder[0][0] + 1
+			
+			if next_position >= _array.size():
+				return false
+			
+			holder[0] = [next_position, _array[next_position]]
+			return true
+		
+		func _iter_get(holder: Variant) -> Variant:
+			var current_value: Dependency = holder[1]
+			return current_value
 
 
 static func _parse_component(
@@ -767,6 +810,16 @@ static func _compile_dependencies_and_modules(
 						object.set_provision_module(module)
 
 
+static func as_string_array(array: Array) -> Array[String]:
+	var string_array: Array[String] = []
+	string_array.resize(array.size())
+	
+	for index in array.size():
+		string_array[index] = array[index]
+	
+	return string_array
+
+
 static func _compile_components(
 	ordered_component_names: Array[String],
 	precomponents_map: Dictionary[String, CompiledResult.Precomponent],
@@ -780,7 +833,8 @@ static func _compile_components(
 	for component_name in ordered_component_names:
 		var precomponent: CompiledResult.Precomponent = precomponents_map[component_name]
 		var component: CompiledResult.Component = precomponent.precompile(
-			ordered_dependency_names[component_name], dependencies_map,
+			as_string_array(ordered_dependency_names[component_name]),
+			dependencies_map,
 		)
 		
 		for module_name in precomponent.get_modules():
@@ -812,7 +866,8 @@ static func _compile_subcomponents(
 		var presubcomponent: CompiledResult.Presubcomponent = \
 			presubcomponents_map[subcomponent_name]
 		var subcomponent: CompiledResult.Subcomponent = presubcomponent.precompile(
-			ordered_dependency_names[subcomponent_name], dependencies_map,
+			as_string_array(ordered_dependency_names[subcomponent_name]),
+			dependencies_map,
 		)
 		
 		for module_name in presubcomponent.get_modules():
@@ -934,9 +989,6 @@ static func _compile_results(
 					all_dependencies.append(dependency)
 		)
 	
-	print_minimum_levels(ordered_components)
-	print_minimum_levels(ordered_subcomponents)
-	
 	return CompiledResult.new(
 		ordered_components,
 		ordered_subcomponents,
@@ -944,32 +996,3 @@ static func _compile_results(
 		all_dependencies,
 		parse_error,
 	)
-
-
-static func print_minimum_levels(ordered_elements: Array) -> void:
-	var minimum_levels: Dictionary[String, Dictionary]
-	
-	for component in ordered_elements:
-		minimum_levels[component.get_name()] = {}
-		
-		for object in component.get_topologically_ordered_graph():
-			if object.get_dependencies().is_empty():
-				if not object.get_name() in minimum_levels:
-					minimum_levels[component.get_name()][object.get_name()] = 0
-					print("%s: MIN LEVEL OF %s IS: %s" % [
-						component.get_name(),
-						object.get_name(),
-						minimum_levels[component.get_name()][object.get_name()],
-					])
-			else:
-				var minimum_level = minimum_levels[component.get_name()]
-				var maximum_level_of_dependencies = 0
-				for dependency in object.get_dependencies():
-					var dependency_minimum_level = minimum_level[dependency.get_name()]
-					if dependency_minimum_level > maximum_level_of_dependencies:
-						maximum_level_of_dependencies = dependency_minimum_level
-				minimum_level[object.get_name()] = max(0, maximum_level_of_dependencies + 1)
-				print("%s: MIN LEVEL OF %s IS: %s" % [
-					component.get_name(), object.get_name(),
-					minimum_level[object.get_name()],
-				])

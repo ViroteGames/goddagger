@@ -2,6 +2,10 @@
 class_name SidePanelDetailsItem extends MarginContainer
 
 
+func _init() -> void:
+	pass
+
+
 var _class_name_text: String
 var _file_path_text: String
 var _coded_details_text: String
