@@ -1,112 +1,188 @@
 class_name ObjectGraphLayout extends RefCounted
 
 
-var _levels: Array[GraphLayoutLevel] = []
+var _layers: Array[GraphLayoutLayer] = []
+
+
+func _resolve_layering_for_component(
+	component: GodDaggerParsingResult.CompiledResult.Component,
+	layer_numbers: Dictionary[String, int],
+	layers: Dictionary[int, GraphLayoutLayer],
+) -> void:
+	
+	for object in component.get_topologically_ordered_graph():
+		if object.get_dependencies().is_empty():
+			if not object.get_name() in layer_numbers:
+				var object_layer_number := 0
+				if not object_layer_number in layers.keys():
+					layers[object_layer_number] = GraphLayoutLayer.new()
+				
+				layer_numbers[object.get_name()] = object_layer_number
+			
+		else:
+			var maximum_layer_of_dependencies = 0
+			for dependency in object.get_dependencies():
+				var dependency_layer = layer_numbers[dependency.get_name()]
+				if dependency_layer > maximum_layer_of_dependencies:
+					maximum_layer_of_dependencies = dependency_layer
+			
+			var object_layer_number := max(0, maximum_layer_of_dependencies + 1)
+			if not object_layer_number in layers.keys():
+				layers[object_layer_number] = GraphLayoutLayer.new()
+			
+			layer_numbers[object.get_name()] = object_layer_number
+
+
+func _populate_layers_with_dependencies(
+	component: GodDaggerParsingResult.CompiledResult.Component,
+	layer_numbers: Dictionary[String, int],
+	layers: Dictionary[int, GraphLayoutLayer],
+) -> void:
+	
+	for object in component.get_topologically_ordered_graph():
+		var object_layer = layer_numbers[object.get_name()]
+		
+		if component.is_dependency_inherited(object):
+			layers[object_layer].add_hidden_dependency_if_not_present_yet(object)
+		else:
+			layers[object_layer].add_visible_dependency_if_not_present_yet(object)
+		
+		for dependency in object.get_dependencies():
+			var dependency_layer = layer_numbers[dependency.get_name()]
+			
+			if component.is_dependency_inherited(dependency):
+				layers[dependency_layer].add_hidden_dependency_if_not_present_yet(dependency)
+			else:
+				layers[dependency_layer].add_visible_dependency_if_not_present_yet(dependency)
+			
+			var in_between_layer = dependency_layer + 1
+			while object_layer - in_between_layer > 0:
+				if component.is_dependency_inherited(dependency):
+					layers[in_between_layer].add_hidden_cross_layer_link(object, dependency)
+				else:
+					layers[in_between_layer].add_visible_cross_layer_link(object, dependency)
+				in_between_layer += 1
 
 
 func _init(
 	component: GodDaggerParsingResult.CompiledResult.Component,
 ) -> void:
 	
-	var level_numbers: Dictionary[String, int] = {}
-	var levels: Dictionary[int, GraphLayoutLevel] = {}
+	var layer_numbers: Dictionary[String, int] = {}
+	var layers: Dictionary[int, GraphLayoutLayer] = {}
 	
-	for object in component.get_topologically_ordered_graph():
-		if object.get_dependencies().is_empty():
-			if not object.get_name() in level_numbers:
-				var object_level_number := 0
-				if not object_level_number in levels.keys():
-					levels[object_level_number] = GraphLayoutLevel.new()
-				
-				level_numbers[object.get_name()] = object_level_number
-			
-		else:
-			var maximum_level_of_dependencies = 0
-			for dependency in object.get_dependencies():
-				var dependency_level = level_numbers[dependency.get_name()]
-				if dependency_level > maximum_level_of_dependencies:
-					maximum_level_of_dependencies = dependency_level
-			
-			var object_level_number := max(0, maximum_level_of_dependencies + 1)
-			if not object_level_number in levels.keys():
-				levels[object_level_number] = GraphLayoutLevel.new()
-			
-			level_numbers[object.get_name()] = object_level_number
-	
-	for object in component.get_topologically_ordered_graph():
-		var object_level_number = level_numbers[object.get_name()]
-		levels[object_level_number].add_dependency_if_not_present_yet(object)
-		
-		for dependency in object.get_dependencies():
-			var dependency_level_number = level_numbers[dependency.get_name()]
-			levels[dependency_level_number].add_dependency_if_not_present_yet(dependency)
-			
-			var in_between_level_number = dependency_level_number + 1
-			while object_level_number - in_between_level_number > 0:
-				levels[in_between_level_number].add_cross_level_link(object, dependency)
-				in_between_level_number += 1
+	_resolve_layering_for_component(component, layer_numbers, layers)
+	_populate_layers_with_dependencies(component, layer_numbers, layers)
 	
 	# TODO simply sort dependencies in each layer by:
 	#  1. all dependencies that belong to the component first (maybe minimizing edge overlaps)
 	#  2. then each subcomponent's dependencies (maybe minimizing edge overlaps?), with each subcomponent being sorted alphabetically
 	
-	for level_number in range(levels.keys().size()):
-		_levels.append(levels[level_number])
+	for layer_number in range(layers.keys().size()):
+		_layers.append(layers[layer_number])
 	
-	for index in _levels.size():
-		_levels[index].print_contents(index)
+	for index in _layers.size():
+		_layers[index].print_contents(index)
 
 
-func get_levels() -> Array[GraphLayoutLevel]:
-	return _levels
+func get_layers() -> Array[GraphLayoutLayer]:
+	return _layers
 
 
-class GraphLayoutLevel extends RefCounted:
+class GraphLayoutLayer extends RefCounted:
 	
-	var _dependencies := GodDaggerParsingResult.CompiledResult.DependencyArray.new()
-	var _cross_level_links: Array[CrossLevelLink] = []
+	var _visible_dependencies := GodDaggerParsingResult.CompiledResult.DependencyArray.new()
+	var _hidden_dependencies := GodDaggerParsingResult.CompiledResult.DependencyArray.new()
+	var _visible_cross_layer_links: Array[CrossLayerLink] = []
+	var _hidden_cross_layer_links: Array[CrossLayerLink] = []
 	
-	func get_dependencies() -> GodDaggerParsingResult.CompiledResult.DependencyArray:
-		return _dependencies
+	func get_visible_dependencies() -> GodDaggerParsingResult.CompiledResult.DependencyArray:
+		return _visible_dependencies
 	
-	func add_dependency_if_not_present_yet(
+	func add_visible_dependency_if_not_present_yet(
 		dependency: GodDaggerParsingResult.CompiledResult.Dependency
 	) -> void:
-		for other_dependency in _dependencies:
+		for other_dependency in _visible_dependencies:
 			if dependency == other_dependency:
 				return
 		
-		self._dependencies.add_dependency(dependency)
+		_visible_dependencies.add_dependency(dependency)
 	
-	func get_cross_level_links() -> Array[CrossLevelLink]:
-		return _cross_level_links
+	func get_hidden_dependencies() -> GodDaggerParsingResult.CompiledResult.DependencyArray:
+		return _hidden_dependencies
 	
-	func add_cross_level_link(
+	func add_hidden_dependency_if_not_present_yet(
+		dependency: GodDaggerParsingResult.CompiledResult.Dependency
+	) -> void:
+		for other_dependency in _hidden_dependencies:
+			if dependency == other_dependency:
+				return
+		
+		_hidden_dependencies.add_dependency(dependency)
+	
+	func get_total_dependencies_amount() -> int:
+		return _visible_dependencies.size() + _hidden_dependencies.size()
+	
+	func get_visible_cross_layer_links() -> Array[CrossLayerLink]:
+		return _visible_cross_layer_links
+	
+	func add_visible_cross_layer_link(
 		object: GodDaggerParsingResult.CompiledResult.Dependency,
 		dependency: GodDaggerParsingResult.CompiledResult.Dependency,
 	) -> void:
 		
-		self._cross_level_links.append(CrossLevelLink.new(object, dependency))
+		_visible_cross_layer_links.append(CrossLayerLink.new(object, dependency))
 	
-	func print_contents(level: int) -> void:
-		print("Level %s has %s dependencies and %s cross links!" % [
-			level, _dependencies.size(), _cross_level_links.size(),
-		])
-		print("At level %s: %s%s" % [
-			level,
-			", ".join(
-				_dependencies.map(
-					func (dependency: GodDaggerParsingResult.CompiledResult.Dependency) -> String: \
-						return dependency.get_name()
-					)
-			),
-			"" if _cross_level_links.is_empty() else " (With crossings: %s)" % [
+	func get_hidden_cross_layer_links() -> Array[CrossLayerLink]:
+		return _hidden_cross_layer_links
+	
+	func add_hidden_cross_layer_link(
+		object: GodDaggerParsingResult.CompiledResult.Dependency,
+		dependency: GodDaggerParsingResult.CompiledResult.Dependency,
+	) -> void:
+		
+		_hidden_cross_layer_links.append(CrossLayerLink.new(object, dependency))
+	
+	func get_total_cross_layer_links_amount() -> int:
+		return _visible_cross_layer_links.size() + _hidden_cross_layer_links.size()
+	
+	func print_contents(layer: int) -> void:
+		print("At layer %s%s%s%s%s" % [
+			layer,
+			"" if _visible_dependencies.size() == 0 else ", visible: %s" % [
 				", ".join(
-					_cross_level_links.map(
-						func (cross_level_link: CrossLevelLink) -> String: \
+					_visible_dependencies.map(
+						func (dependency: GodDaggerParsingResult.CompiledResult.Dependency) -> String: \
+							return dependency.get_name()
+						)
+				)
+			],
+			"" if _hidden_dependencies.size() == 0 else ", hidden: %s" % [
+				", ".join(
+					_hidden_dependencies.map(
+						func (dependency: GodDaggerParsingResult.CompiledResult.Dependency) -> String: \
+							return dependency.get_name()
+						)
+				)
+			],
+			"" if _visible_cross_layer_links.is_empty() else " (Visible crossings: %s)" % [
+				", ".join(
+					_visible_cross_layer_links.map(
+						func (cross_layer_link: CrossLayerLink) -> String: \
 							return "%s to %s" % [
-								cross_level_link.get_dependency().get_name(),
-								cross_level_link.get_object().get_name(),
+								cross_layer_link.get_dependency().get_name(),
+								cross_layer_link.get_object().get_name(),
+							]
+					)
+				)
+			],
+			"" if _hidden_cross_layer_links.is_empty() else " (Hidden crossings: %s)" % [
+				", ".join(
+					_hidden_cross_layer_links.map(
+						func (cross_layer_link: CrossLayerLink) -> String: \
+							return "%s to %s" % [
+								cross_layer_link.get_dependency().get_name(),
+								cross_layer_link.get_object().get_name(),
 							]
 					)
 				)
@@ -114,7 +190,7 @@ class GraphLayoutLevel extends RefCounted:
 		])
 
 
-class CrossLevelLink extends RefCounted:
+class CrossLayerLink extends RefCounted:
 	
 	var _object: GodDaggerParsingResult.CompiledResult.Dependency
 	var _dependency: GodDaggerParsingResult.CompiledResult.Dependency
@@ -124,12 +200,12 @@ class CrossLevelLink extends RefCounted:
 		dependency: GodDaggerParsingResult.CompiledResult.Dependency,
 	) -> void:
 		
-		self._object = object
-		self._dependency = dependency
+		_object = object
+		_dependency = dependency
 	
 	func get_object() -> GodDaggerParsingResult.CompiledResult.Dependency:
-		return self._object
+		return _object
 	
 	func get_dependency() -> GodDaggerParsingResult.CompiledResult.Dependency:
-		return self._dependency
+		return _dependency
 	
