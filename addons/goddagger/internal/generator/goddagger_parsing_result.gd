@@ -218,6 +218,9 @@ class CompiledResult extends RefCounted:
 		
 		func set_topologically_ordered_graph(graph: Array[Dependency]) -> void:
 			self._topologically_ordered_graph = graph
+		
+		func is_dependency_inherited(dependency: Dependency) -> bool:
+			return false
 	
 	
 	class Presubcomponent extends Precomponent:

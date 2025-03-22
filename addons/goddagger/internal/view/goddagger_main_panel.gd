@@ -361,9 +361,8 @@ func _populate_property_list_for_component(
 	})
 	
 	for object in component.get_topologically_ordered_graph():
-		if component is GodDaggerParsingResult.CompiledResult.Subcomponent:
-			if component.is_dependency_inherited(object):
-				continue
+		if component.is_dependency_inherited(object):
+			continue
 		
 		var object_scope_property_name = "%s%s%s/%s" % [
 			GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX,
