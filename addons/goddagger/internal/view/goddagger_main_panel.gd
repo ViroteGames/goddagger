@@ -448,4 +448,4 @@ func _validate_property(property: Dictionary) -> void:
 	elif property.hint_string.contains(GodDaggerConstants.GODDAGGER_INSPECTOR_PROPERTY_PREFIX):
 		return
 	
-	#property.usage = PROPERTY_USAGE_NO_EDITOR
+	property.usage = PROPERTY_USAGE_NO_EDITOR

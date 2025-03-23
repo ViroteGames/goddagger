@@ -9,6 +9,16 @@ func _init(graph_canvas: GraphEdit) -> void:
 	self._graph_canvas = graph_canvas
 
 
+func _connect_graph_nodes(
+	object: GodDaggerParsingResult.CompiledResult.Dependency,
+	dependency: GodDaggerParsingResult.CompiledResult.Dependency,
+) -> void:
+	
+	_graph_nodes[dependency.get_name()].set_slot_enabled_right(0, true)
+	_graph_nodes[object.get_name()].set_slot_enabled_left(0, true)
+	_graph_canvas.connect_node(dependency.get_name(), 0, object.get_name(), 0)
+
+
 func draw_graph_for_component(
 	component: GodDaggerParsingResult.CompiledResult.Component,
 ) -> void:
@@ -20,7 +30,7 @@ func draw_graph_for_component(
 	var computing_width := 0
 	var computing_height := 0
 	var horizontal_padding := 60
-	var vertical_padding := 0
+	var vertical_padding := 30
 	
 	var real_layers_amount := object_graph_layout.get_layers().size()
 	var total_layers_amount := real_layers_amount
@@ -53,7 +63,7 @@ func draw_graph_for_component(
 		
 		layout_sizes[layer_number] = layer_vertical_size
 		
-		computing_height = (164 + vertical_padding) * layer_vertical_size
+		computing_height = (102 + vertical_padding) * layer_vertical_size
 		
 		committed_width += computing_width
 		committed_height = max(computing_height, committed_height)
@@ -61,13 +71,31 @@ func draw_graph_for_component(
 		computing_width = 0
 		computing_height = 0
 	
+	for layer_number in real_layers_amount - 1:
+		var layer := object_graph_layout.get_layers()[layer_number]
+		var next_layer := object_graph_layout.get_layers()[layer_number + 1]
+		
+		for dependency in layer.get_visible_dependencies():
+			for object in next_layer.get_visible_dependencies():
+				if dependency in object.get_dependencies():
+					_connect_graph_nodes(object, dependency)
+			
+			for object in next_layer.get_hidden_dependencies():
+				if dependency in object.get_dependencies():
+					_connect_graph_nodes(object, dependency)
+		
+		for dependency in layer.get_hidden_dependencies():
+			for object in next_layer.get_visible_dependencies():
+				if dependency in object.get_dependencies():
+					_connect_graph_nodes(object, dependency)
+	
 	for layer_number in layout_sizes.size():
 		var layer_vertical_size := layout_sizes[layer_number]
 		
-		for item_index in layer_vertical_size:
+		for layer_vertical_index in layer_vertical_size:
 			var layer := object_graph_layout.get_layers()[layer_number]
 			
-			var object_index := item_index
+			var object_index := layer_vertical_index
 			var layer_dependencies := layer.get_visible_dependencies()
 			
 			var link_index := object_index - layer_dependencies.size()
@@ -83,7 +111,7 @@ func draw_graph_for_component(
 						committed_height / 2
 					) + Vector2(
 						layer_number * (committed_width / total_layers_amount),
-						item_index * (committed_height / layer_vertical_size),
+						layer_vertical_index * (committed_height / layer_vertical_size),
 					) + Vector2(
 						(committed_width / total_layers_amount) / 2,
 						0,
@@ -92,24 +120,26 @@ func draw_graph_for_component(
 				_graph_canvas.add_child(object_node_view)
 			
 			elif link_index < layer_cross_links.size():
-				# TODO we are ready to draw cross_layer link! replace the drawing below with it.
+				var dependency := layer_cross_links[link_index].get_dependency()
 				
-				var object := layer_cross_links[link_index].get_dependency()
-				
-				var object_node_view := ObjectGraphNode.spawn(object.get_name())
-				object_node_view.position_offset = object_node_view.position_offset \
+				var link_node_view := LinkGraphNode.spawn(
+					_graph_nodes[dependency.get_name()], layer_number, layer_vertical_index,
+				)
+				link_node_view.position_offset = link_node_view.position_offset \
 					- Vector2(
 						committed_width / 2,
 						committed_height / 2
 					) + Vector2(
 						layer_number * (committed_width / total_layers_amount),
-						item_index * (committed_height / layer_vertical_size),
+						layer_vertical_index * (committed_height / layer_vertical_size),
 					) + Vector2(
 						(committed_width / total_layers_amount) / 2,
 						0,
 					)
 				
-				_graph_canvas.add_child(object_node_view)
+				var object := layer_cross_links[link_index].get_object()
+				var object_node_view := _graph_nodes[object.get_name()]
+				object_node_view.add_link_node(_graph_canvas, link_node_view)
 
 
 func clear() -> void:
@@ -123,5 +153,13 @@ func clear() -> void:
 			if child == object_node_view:
 				_graph_canvas.remove_child(object_node_view)
 				break
+		
+		for link_node_view in object_node_view.get_and_clear_link_nodes():
+			for child in _graph_canvas.get_children():
+				if child == link_node_view:
+					_graph_canvas.remove_child(link_node_view)
+					break
+			
+			link_node_view.queue_free()
 		
 		object_node_view.queue_free()

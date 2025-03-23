@@ -8,3 +8,4 @@ const MAIN_PANEL_SCENE_PATH := "uid://dy4fqw22u8o44"
 
 const SIDEPANEL_DETAILS_ITEM_SCENE_PATH := "uid://cvgqidpq7llen"
 const OBJECT_GRAPH_NODE_SCENE_PATH := "uid://2gj3nbomc12j"
+const LINK_GRAPH_NODE_SCENE_PATH := "uid://dlyaj7rp8g01k"
