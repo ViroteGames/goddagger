@@ -2,23 +2,26 @@
 class_name ObjectGraphNode extends GraphNode
 
 
-var _object_name: String
+var _object: GodDaggerParsingResult.CompiledResult.Dependency
 var _link_nodes: Dictionary[String, Array] = {}
 
 
+@onready var _scope_view := %Scope
+
+
 func _get_link_node_name(dependency_name: String, index: int) -> String:
-	return "%sTo%sPart%s" % [dependency_name, _object_name, index]
+	return "%sTo%sPart%s" % [dependency_name, _object.get_name(), index]
 
 
 func _establish_link_connections(graph_canvas: GraphEdit, dependency_name: String) -> void:
-	graph_canvas.disconnect_node(dependency_name, 0, _object_name, 0)
+	graph_canvas.disconnect_node(dependency_name, 0, _object.get_name(), 0)
 	
 	for link_node_index in _link_nodes[dependency_name].size():
 		var link_node: LinkGraphNode = _link_nodes[dependency_name][link_node_index]
 		var link_node_name := _get_link_node_name(dependency_name, link_node_index)
 		
 		graph_canvas.disconnect_node(dependency_name, 0, link_node_name, 0)
-		graph_canvas.disconnect_node(link_node_name, 0, _object_name, 0)
+		graph_canvas.disconnect_node(link_node_name, 0, _object.get_name(), 0)
 		
 		for next_link_index in range(link_node_index, _link_nodes[dependency_name].size() - 1):
 			var next_link_node_name := _get_link_node_name(dependency_name, next_link_index)
@@ -30,7 +33,7 @@ func _establish_link_connections(graph_canvas: GraphEdit, dependency_name: Strin
 		
 		if link_node_index == _link_nodes[dependency_name].size() - 1:
 			set_slot_enabled_left(0, true)
-			graph_canvas.connect_node(link_node_name, 0, _object_name, 0)
+			graph_canvas.connect_node(link_node_name, 0, _object.get_name(), 0)
 			graph_canvas.connect_node(link_node_name, 0, link_node_name, 0)
 		
 		if link_node_index < _link_nodes[dependency_name].size() - 1:
@@ -40,17 +43,21 @@ func _establish_link_connections(graph_canvas: GraphEdit, dependency_name: Strin
 
 
 func populated_with(
-	object_name: String,
+	object: GodDaggerParsingResult.CompiledResult.Dependency,
 ) -> ObjectGraphNode:
 	
-	_object_name = object_name
-	name = object_name
-	title = object_name
+	_object = object
+	name = _object.get_name()
+	title = _object.get_name()
 	return self
 
 
+func _ready() -> void:
+	_scope_view.text = _object.get_scope().get_name() if _object.get_scope() else "<unscoped>"
+
+
 func get_object_name() -> String:
-	return _object_name
+	return _object.get_name()
 
 
 func add_link_node(
@@ -99,12 +106,12 @@ static var _object_graph_node_scene := preload(GodDaggerViewConstants.OBJECT_GRA
 
 
 static func spawn(
-	object_name: String,
+	object: GodDaggerParsingResult.CompiledResult.Dependency,
 ) -> ObjectGraphNode:
 	
 	return ObjectGraphNode \
 		._object_graph_node_scene \
 		.instantiate() \
 		.populated_with(
-			object_name,
+			object,
 		)

@@ -25,7 +25,10 @@ theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 
 [node name="Scope" type="CodeEdit" parent="MarginContainer"]
+unique_name_in_owner = true
+clip_contents = false
 layout_mode = 2
 editable = false
 selecting_enabled = false
 scroll_fit_content_height = true
+scroll_fit_content_width = true

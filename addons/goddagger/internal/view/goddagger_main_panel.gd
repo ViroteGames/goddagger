@@ -101,16 +101,20 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 	_dependency_graph_panel.clear()
 	
 	for component in parsing_result.get_components():
-		_populate_property_list_for_component(component)
 		_dependency_graph_panel.draw_graph_for_component(component)
+		_populate_property_list_for_component(component)
 	
 	for subcomponent in parsing_result.get_subcomponents():
-		_populate_property_list_for_component(subcomponent)
 		_dependency_graph_panel.draw_graph_for_component(subcomponent)
+		_populate_property_list_for_component(subcomponent)
 	
 	_current_values = _default_values.duplicate()
 	notify_property_list_changed()
 	EditorInterface.get_inspector().edit(self)
+
+
+func do_draw_object_graph_layout(object_graph_layout: ObjectGraphLayout) -> void:
+	_dependency_graph_panel.do_draw_object_graph_layout(object_graph_layout)
 
 
 func _populate_property_list_for_component(
