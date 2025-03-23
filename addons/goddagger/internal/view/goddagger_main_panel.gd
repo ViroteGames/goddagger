@@ -94,6 +94,8 @@ func _react_to_main_screen_change(screen_name: String) -> void:
 			"12": doce,
 		}
 	)
+	
+	_dependency_graph_panel.draw_graph_for_component(component)
 
 
 func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.CompiledResult) -> void:
@@ -101,11 +103,11 @@ func _update_visible_parsing_result(parsing_result: GodDaggerParsingResult.Compi
 	_dependency_graph_panel.clear()
 	
 	for component in parsing_result.get_components():
-		_dependency_graph_panel.draw_graph_for_component(component)
+		#_dependency_graph_panel.draw_graph_for_component(component)
 		_populate_property_list_for_component(component)
 	
 	for subcomponent in parsing_result.get_subcomponents():
-		_dependency_graph_panel.draw_graph_for_component(subcomponent)
+		#_dependency_graph_panel.draw_graph_for_component(subcomponent)
 		_populate_property_list_for_component(subcomponent)
 	
 	_current_values = _default_values.duplicate()
