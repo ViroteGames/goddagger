@@ -74,8 +74,8 @@ func do_draw_object_graph_layout(object_graph_layout: ObjectGraphLayout) -> void
 	var committed_height := 0
 	var computing_width := 0
 	var computing_height := 0
-	var horizontal_padding := 60
-	var vertical_padding := 30
+	var horizontal_padding := 75
+	var vertical_padding := 75
 	
 	for layer_number in total_layers_amount:
 		var layer_visible_dependencies := [] if layer_number >= real_layers_amount \
@@ -114,7 +114,6 @@ func do_draw_object_graph_layout(object_graph_layout: ObjectGraphLayout) -> void
 		computing_width -= horizontal_padding
 		computing_height = 0
 	
-	print("LAYER: %sx%s" % [layout_sizes.size(), layout_sizes])
 	var max_vertical_size := 0
 	
 	for index in layout_sizes.size():
@@ -129,6 +128,9 @@ func do_draw_object_graph_layout(object_graph_layout: ObjectGraphLayout) -> void
 		var layer_vertical_index_offset := 0
 		
 		for layer_vertical_index in layer_vertical_size:
+			if layer_number >= object_graph_layout.get_layers().size():
+				continue
+			
 			var layer := object_graph_layout.get_layers()[layer_number]
 			
 			var object_index := layer_vertical_index
@@ -179,8 +181,10 @@ func do_draw_object_graph_layout(object_graph_layout: ObjectGraphLayout) -> void
 					) + Vector2(
 						(committed_width / total_layers_amount) / 2,
 						0,
+					) + Vector2(
+						((committed_width / total_layers_amount) / 2) - horizontal_padding + (45 / 4),
+						0,
 					)
-				# TODO also centralize this link_node_view within the layer vertical bounds.
 				
 				var object_node_view := _graph_nodes[object.get_name()]
 				object_node_view.add_link_node(_graph_canvas, link_node_view)

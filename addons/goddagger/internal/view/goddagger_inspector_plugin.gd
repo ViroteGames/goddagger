@@ -42,7 +42,7 @@ func _parse_property(
 				add_property_editor(property_name, ModulesEditorProperty.new())
 			return true
 		GodDaggerConstants.BASE_GODDAGGER_SCOPE_NAME:
-			add_property_editor(property_name, ScopeEditorProperty.new(false))
+			add_property_editor(property_name, ScopeEditorProperty.new())
 			return true
 		_:
 			if is_property_for_summary:
