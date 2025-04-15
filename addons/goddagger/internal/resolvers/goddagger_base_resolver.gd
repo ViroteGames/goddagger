@@ -16,7 +16,7 @@ static func _parsed_line_resolves_to_expected_class(
 		ResolutionType.CLASSES:
 			is_of_expected_class = is_of_expected_class and parsed_line \
 				.trim_prefix("%s " % GodDaggerConstants.KEYWORD_CLASS_NAME) \
-				.begins_with(expected_class_name)
+				.begins_with("%s " % expected_class_name)
 		ResolutionType.SUBCLASSES:
 			is_of_expected_class = is_of_expected_class and \
 				parsed_line.ends_with(expected_class_name)

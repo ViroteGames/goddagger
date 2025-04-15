@@ -159,6 +159,11 @@ static func _populate_component_objects_graph_by_parsing_module_method(
 			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_FILE_PATH_TAG,
 			resolved_class.get_resolved_file_path(),
 		)
+		component_objects_graph.set_tag_to_vertex(
+			provider_method_object_class,
+			GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_PROVISION_METHOD_NAME,
+			method_name,
+		)
 
 
 static func _populate_component_objects_graph_by_parsing_module_property(
@@ -379,21 +384,19 @@ static func _populate_component_objects_graph_scope_by_parsing_component_methods
 					)
 
 
-static func _build_dependency_graph_by_parsing_project_files() -> GodDaggerParsingResult:
-	var component_relationships_graph := GodDaggerGraph.new("Component Relationships Graph")
-	var components_to_objects_graphs: Dictionary[String, GodDaggerGraph] = {}
-	
+static func _build_dependency_graph_by_parsing_project_files(
+) -> GodDaggerParsingResult.CompiledResult:
 	if not GodDaggerFileUtils._clear_generated_files():
-		return GodDaggerParsingResult.new(
-			component_relationships_graph, components_to_objects_graphs,
-			"Could not clear previously generated files!"
-		)
+		return get_parsing_result_error("Could not clear previously generated files!")
 	
 	print("Building again...")
 	
 	var component_classes := GodDaggerComponentResolver._resolve_component_classes()
 	var subcomponent_classes := GodDaggerComponentResolver._resolve_subcomponent_classes()
 	var module_classes := GodDaggerModuleResolver._resolve_module_classes()
+	
+	var component_relationships_graph := GodDaggerGraph.new("Component Relationships Graph")
+	var components_to_objects_graphs: Dictionary[String, GodDaggerGraph] = {}
 	
 	for module_class in module_classes:
 		var resolved_class_name := module_class.get_resolved_class_name()
@@ -452,9 +455,19 @@ static func _build_dependency_graph_by_parsing_project_files() -> GodDaggerParsi
 				property,
 			)
 	
-	return GodDaggerParsingResult.new(
+	return GodDaggerComponentsGenerator \
+		.generate_code_implementing_components(
 			component_relationships_graph, components_to_objects_graphs,
 		)
+
+
+static func get_parsing_result_error(error: String) -> GodDaggerParsingResult.CompiledResult:
+	var component_relationships_graph := GodDaggerGraph.new("Component Relationships Graph")
+	var components_to_objects_graphs: Dictionary[String, GodDaggerGraph] = {}
+	
+	return GodDaggerParsingResult \
+		.new(component_relationships_graph, components_to_objects_graphs, error) \
+		._compile()
 	
 	#var serialized_parsing_result := GodDaggerTemplates.GODDAGGER_PARSING_RESULT_TEMPLATE % [
 		#component_relationships_graph.serialize(),

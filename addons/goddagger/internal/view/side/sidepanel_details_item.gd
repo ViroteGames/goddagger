@@ -210,7 +210,8 @@ class Dependency extends RefCounted:
 		var coded_details_text := ""
 		
 		if object.get_provision_module():
-			coded_details_text += "~ provisioned by %s" % object.get_provision_module().get_name()
+			coded_details_text += "~ provisioned by %s" % \
+				object.get_provision_module().get_module().get_name()
 		
 		if not coded_details_text.is_empty():
 			coded_details_text += "\n"

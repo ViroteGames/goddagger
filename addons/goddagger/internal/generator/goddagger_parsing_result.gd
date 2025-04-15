@@ -345,17 +345,23 @@ class CompiledResult extends RefCounted:
 		class Preprovision extends RefCounted:
 			
 			var _name: String
+			var _method: String
 			var _scope: Scope
 			var _dependencies: Array[String]
 			
 			func _init(
 				name: String,
+				method: String,
 			) -> void:
 				
 				self._name = name
+				self._method = method
 			
 			func get_name() -> String:
 				return self._name
+			
+			func get_method() -> String:
+				return self._method
 			
 			func get_scope() -> Scope:
 				return _scope
@@ -406,17 +412,23 @@ class CompiledResult extends RefCounted:
 		class Provision extends RefCounted:
 			
 			var _dependent: Dependency
+			var _method_name: String
 			var _scope: Scope
 			var _dependencies: Array[Dependency]
 			
 			func _init(
 				dependent: Dependency,
+				method_name: String,
 			) -> void:
 				
 				self._dependent = dependent
+				self._method_name = method_name
 			
 			func get_dependent() -> Dependency:
-				return self._dependent
+				return _dependent
+			
+			func get_method_name() -> String:
+				return _method_name
 			
 			func get_scope() -> Scope:
 				return _scope
@@ -475,7 +487,7 @@ class CompiledResult extends RefCounted:
 	
 	class Dependency extends CompiledElement:
 		
-		var _provision_module: Module
+		var _provision_module: Provision
 		var _dependencies: Array[Dependency]
 		var _scope: Scope
 		
@@ -487,10 +499,10 @@ class CompiledResult extends RefCounted:
 			
 			super._init(name, file_path, parse_error)
 		
-		func get_provision_module() -> Module:
+		func get_provision_module() -> Provision:
 			return self._provision_module
 		
-		func set_provision_module(provision_module: Module) -> void:
+		func set_provision_module(provision_module: Provision) -> void:
 			self._provision_module = provision_module
 		
 		func get_dependencies() -> Array[Dependency]:
@@ -504,6 +516,26 @@ class CompiledResult extends RefCounted:
 		
 		func set_scope(scope: Scope) -> void:
 			self._scope = scope
+		
+		
+		class Provision extends RefCounted:
+			
+			var _module: Module
+			var _method_name: String
+			
+			func _init(
+				module: Module,
+				method_name: String,
+			) -> void:
+				
+				self._module = module
+				self._method_name = method_name
+			
+			func get_module() -> Module:
+				return _module
+			
+			func get_method_name() -> String:
+				return _method_name
 	
 	
 	class DependencyArray extends RefCounted:
@@ -633,14 +665,18 @@ static func _parse_module(
 			components_to_dependencies_graphs[dependent_component]
 		
 		for object in component_to_dependencies_graph.get_outgoing_vertices(module_name):
-			var provision := CompiledResult.Premodule.Preprovision.new(object)
+			var provision_method_name = component_to_dependencies_graph.get_vertex_tag(
+				object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_PROVISION_METHOD_NAME,
+			)
+			
+			var provision := CompiledResult.Premodule.Preprovision.new(object, provision_method_name)
 			
 			var object_scope_name = component_to_dependencies_graph.get_vertex_tag(
 				object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_TAG,
 			)
 			
 			if object_scope_name:
-				var object_scope_file_path := component_relationships_graph.get_vertex_tag(
+				var object_scope_file_path := component_to_dependencies_graph.get_vertex_tag(
 					object, GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_FILE_PATH_TAG,
 				)
 				var object_scope := CompiledResult.Scope.new(
@@ -803,14 +839,20 @@ static func _compile_dependencies_and_modules(
 				
 				for preprovision in premodule.get_provisions():
 					if preprovision.get_name() == object_name:
-						var provision := CompiledResult.Module.Provision.new(object)
+						var provision := CompiledResult.Module.Provision.new(
+							object, preprovision.get_method(),
+						)
 						provision.set_scope(preprovision.get_scope())
 						
 						for dependency_name in preprovision.get_dependencies():
 							provision.add_dependency(dependencies_map[dependency_name])
 						
 						module.add_provision(provision)
-						object.set_provision_module(module)
+						object.set_provision_module(
+							CompiledResult.Dependency.Provision.new(
+								module, preprovision.get_method()
+							),
+						)
 
 
 static func as_string_array(array: Array) -> Array[String]:
