@@ -48,8 +48,7 @@ func _exit_tree() -> void:
 
 func _build() -> bool:
 	var parsing_result := GodDaggerComponentsParser \
-		._build_dependency_graph_by_parsing_project_files() \
-		._compile()
+		._build_dependency_graph_by_parsing_project_files()
 	
 	var parse_error := parsing_result.get_parse_error()
 	var has_parse_error := not parse_error.is_empty()
