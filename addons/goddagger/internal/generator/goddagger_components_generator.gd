@@ -180,16 +180,184 @@ static func _generate_dependency_providers_implementations(
 	return generated_code
 
 
+static func _generate_module_local_instantiations(
+	modules: Array[GodDaggerParsingResult.CompiledResult.Module],
+) -> String:
+	
+	var generated_code: String = ""
+	
+	for module in modules:
+		if not generated_code.is_empty():
+			generated_code = "\t\t"
+		
+		generated_code += GodDaggerTemplates.GODDAGGER_MODULE_LOCAL_INSTANTIATIONS_TEMPLATE \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_MODULE_CLASS,
+				module.get_name(),
+			) \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_MODULE_CLASS_SNAKE_CASE,
+				module.get_name().to_snake_case(),
+			)
+	
+	return generated_code
+
+
+static func _generate_providers_argument_declarations(
+	dependencies: Array[GodDaggerParsingResult.CompiledResult.Dependency],
+) -> String:
+	
+	var generated_code: String = ""
+	
+	for dependency in dependencies:
+		if not generated_code.is_empty():
+			generated_code += "\n\t\t\t"
+		
+		generated_code += GodDaggerTemplates.GODDAGGER_PROVIDER_ARGUMENT_DECLARATION_TEMPLATE \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_DEPENDENCY_CLASS_SNAKE_CASE,
+				dependency.get_name().to_snake_case(),
+			)
+	
+	return generated_code
+
+
+static func _generate_providers_property_instantiations(
+	dependencies: Array[GodDaggerParsingResult.CompiledResult.Dependency],
+) -> String:
+	
+	var generated_code: String = ""
+	
+	for dependency in dependencies:
+		if generated_code.is_empty():
+			generated_code += "\n"
+			
+		else:
+			generated_code += "\n"
+		
+		var provision_module := dependency.get_provision_module()
+		
+		if provision_module:
+			generated_code += GodDaggerTemplates \
+				.GODDAGGER_MODULE_ASSISTED_PROVIDER_CREATION_TO_PROPERTY_ASSIGNMENT_TEMPLATE \
+				.replace(
+					GodDaggerTemplates.ARGUMENT_MODULE_CLASS_SNAKE_CASE,
+					provision_module.get_module().get_name().to_snake_case(),
+				)
+			
+		else:
+			generated_code += GodDaggerTemplates \
+				.GODDAGGER_CONSTRUCTOR_INJECTED_PROVIDER_CREATION_TO_PROPERTY_ASSIGNMENT_TEMPLATE
+		
+		generated_code = generated_code \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_DEPENDENCY_CLASS,
+				dependency.get_name(),
+			) \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_DEPENDENCY_CLASS_SNAKE_CASE,
+				dependency.get_name().to_snake_case(),
+			) \
+			.replace(
+				GodDaggerTemplates.DECLARE_PROVIDERS_ARGUMENTS,
+				_generate_providers_argument_declarations(dependency.get_dependencies()),
+			)
+	
+	return generated_code
+
+
+static func _generate_exposed_dependencies_access_method_declarations(
+	dependencies: Array[GodDaggerParsingResult.CompiledResult.Dependency],
+) -> String:
+	
+	var generated_code: String = ""
+	
+	for dependency in dependencies:
+		if not generated_code.is_empty():
+			generated_code += "\n\t"
+		
+		generated_code += GodDaggerTemplates \
+			.GODDAGGER_EXPOSED_DEPENDENCY_ACCESS_METHOD_DECLARATION_TEMPLATE \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_DEPENDENCY_CLASS,
+				dependency.get_name(),
+			) \
+			.replace(
+				GodDaggerTemplates.ARGUMENT_DEPENDENCY_CLASS_SNAKE_CASE,
+				dependency.get_name().to_snake_case(),
+			)
+	
+	return generated_code
+
+
+static func _generate_component_implementation(
+	component: GodDaggerParsingResult.CompiledResult.Component,
+) -> String:
+	
+	return GodDaggerTemplates.GODDAGGER_COMPONENT_TEMPLATE \
+		.replace(
+			GodDaggerTemplates.ARGUMENT_COMPONENT_CLASS,
+			component.get_class(),
+		) \
+		.replace(
+			GodDaggerTemplates.DECLARE_DEPENDENCIES_PROPERTIES,
+			_generate_dependencies_property_declarations(
+				component.get_topologically_ordered_graph(),
+			),
+		) \
+		.replace(
+			GodDaggerTemplates.INSTANTIATE_MODULES,
+			_generate_module_local_instantiations(component.get_modules()),
+		) \
+		.replace(
+			GodDaggerTemplates.INSTANTIATE_PROVIDERS,
+			_generate_providers_property_instantiations(
+				component.get_topologically_ordered_graph(),
+			),
+		) \
+		.replace(
+			GodDaggerTemplates.DECLARE_EXPOSED_DEPENDENCIES_ACCESS_METHODS,
+			_generate_exposed_dependencies_access_method_declarations(
+				component.get_exposed_dependencies(),
+			),
+		)
+
+
 static func _generate_subcomponents_implementations(
 	parsing_result: GodDaggerParsingResult.CompiledResult,
 ) -> String:
-	return ""
+	
+	var generated_code: String = ""
+	
+	for component in parsing_result.get_subcomponents():
+		generated_code += _generate_component_implementation(component)
+	
+	return generated_code
 
 
 static func _generate_components_implementations(
 	parsing_result: GodDaggerParsingResult.CompiledResult,
 ) -> String:
-	return ""
+	
+	var generated_code: String = ""
+	
+	for component in parsing_result.get_components():
+		generated_code += _generate_component_implementation(component)
+	
+	return generated_code
+
+
+static func _conflate_empty_structures(generated_code: String) -> String:
+	
+	var conflate_empty_constructors = RegEx.new()
+	conflate_empty_constructors.compile("_init\\((\\W)*\\)")
+	generated_code = conflate_empty_constructors.sub(generated_code, "_init()", true)
+	
+	var conflate_empty_constructor_calls = RegEx.new()
+	conflate_empty_constructor_calls.compile("\\.new\\((\\W)*\\)")
+	generated_code = conflate_empty_constructor_calls.sub(generated_code, ".new()", true)
+	
+	return generated_code
 
 
 static func generate_code_implementing_components(
@@ -201,22 +369,32 @@ static func generate_code_implementing_components(
 		.new(component_relationships_graph, components_to_objects_graphs) \
 		._compile()
 	
+	var components_implementation_generated_code := GodDaggerTemplates \
+		.GODDAGGER_GENERATED_COMPONENTS_TEMPLATE \
+		.replace(
+			GodDaggerTemplates.DECLARE_DEPENDENCY_PROVIDERS,
+			_generate_dependency_providers_implementations(parsing_result),
+		) \
+		.replace(
+			GodDaggerTemplates.DECLARE_SUBCOMPONENTS,
+			_generate_subcomponents_implementations(parsing_result),
+		) \
+		.replace(
+			GodDaggerTemplates.DECLARE_COMPONENTS,
+			_generate_components_implementations(parsing_result),
+		) % randi() % 100000
+	
+	components_implementation_generated_code = _conflate_empty_structures(
+		components_implementation_generated_code,
+	)
+	
 	var did_generate_components_implementation := GodDaggerFileUtils \
 		._generate_script_with_contents(
-			GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
-			GodDaggerTemplates.GODDAGGER_GENERATED_COMPONENTS_TEMPLATE \
-				.replace(
-					GodDaggerTemplates.DECLARE_DEPENDENCY_PROVIDERS,
-					_generate_dependency_providers_implementations(parsing_result),
-				) \
-				.replace(
-					GodDaggerTemplates.DECLARE_SUBCOMPONENTS,
-					_generate_subcomponents_implementations(parsing_result),
-				) \
-				.replace(
-					GodDaggerTemplates.DECLARE_COMPONENTS,
-					_generate_components_implementations(parsing_result),
-				),
+			"%s%s" % [
+				GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
+				randi() % 100000
+			],
+			components_implementation_generated_code,
 		)
 	
 	if did_generate_components_implementation:
