@@ -111,6 +111,8 @@ func get_vertex_tag(value: Variant, tag_name: String) -> Variant:
 
 
 func serialize() -> String:
+	# TODO include GodDaggerConstants.GODDAGGER_GRAPH_VERTEX_SCOPE_FILE_PATH_TAG
+	
 	return "{\"%s\": \"%s\",\"%s\": [%s]}" % [
 		GodDaggerConstants.GODDAGGER_GRAPH_SERIALIZED_KEY_NAME,
 		self._name,

@@ -8,14 +8,10 @@ var _coded_details_text: String
 var _parse_error_text: String
 
 
-@onready var _class_name_view: Label = \
-	$"VBoxContainer/HFlowContainer/SidePanelItemClassName"
-@onready var _file_path_view: Label = \
-	$"VBoxContainer/HFlowContainer/SidePanelItemFilePath"
-@onready var _coded_details_view: CodeEdit = \
-	$"VBoxContainer/SidePanelItemCodedDetails"
-@onready var _parse_error_view: Label = \
-	$"VBoxContainer/HFlowContainer2/SidePanelItemParseErrorDescription"
+@onready var _class_name_view: Label = %SidePanelItemClassName
+@onready var _file_path_view: Label = %SidePanelItemFilePath
+@onready var _coded_details_view: CodeEdit = %SidePanelItemCodedDetails
+@onready var _parse_error_view: Label = %SidePanelItemParseErrorDescription
 
 
 func populated_with(
@@ -74,16 +70,24 @@ class Component extends RefCounted:
 		
 		var coded_details_text := ""
 		
-		if component.get_scope().is_empty():
+		if not component.get_scope():
 			coded_details_text += "~ unscoped"
 		else:
-			coded_details_text += "~ scoped to %s" % component.get_scope()
+			coded_details_text += "~ scoped to %s" % component.get_scope().get_name()
 		
 		if not component.get_modules().is_empty():
-			coded_details_text += "\n~ uses %s" % ", ".join(component.get_modules())
+			coded_details_text += "\n~ uses %s" % ", " \
+				.join(
+					component.get_modules()
+						.map(func(module): return module.get_name())
+				)
 		
-		if not component.get_exposed_objects().is_empty():
-			coded_details_text += "\n~ exposes %s" % ", ".join(component.get_exposed_objects())
+		if not component.get_exposed_dependencies().is_empty():
+			coded_details_text += "\n~ exposes %s" % ", " \
+				.join(
+					component.get_exposed_dependencies()
+						.map(func(dependency): return dependency.get_name())
+				)
 		
 		return SidePanelDetailsItem.spawn(
 			component.get_name(),
@@ -106,22 +110,31 @@ class Subcomponent extends RefCounted:
 			
 			for linked_parent in subcomponent.get_linked_parents():
 				coded_details_text += "\n\t~ %s via %s" % [
-					linked_parent.get_component(), linked_parent.get_linking_module(),
+					linked_parent.get_component().get_name(),
+					linked_parent.get_linking_module().get_name(),
 				]
 		
 		if not coded_details_text.is_empty():
 			coded_details_text += "\n"
 		
-		if subcomponent.get_scope().is_empty():
+		if not subcomponent.get_scope():
 			coded_details_text += "~ unscoped"
 		else:
-			coded_details_text += "~ scoped to %s" % subcomponent.get_scope()
+			coded_details_text += "~ scoped to %s" % subcomponent.get_scope().get_name()
 		
 		if not subcomponent.get_modules().is_empty():
-			coded_details_text += "\n~ uses %s" % ", ".join(subcomponent.get_modules())
+			coded_details_text += "\n~ uses %s" % ", " \
+				.join(
+					subcomponent.get_modules()
+						.map(func(module): return module.get_name())
+				)
 		
-		if not subcomponent.get_exposed_objects().is_empty():
-			coded_details_text += "\n~ exposes %s" % ", ".join(subcomponent.get_exposed_objects())
+		if not subcomponent.get_exposed_dependencies().is_empty():
+			coded_details_text += "\n~ exposes %s" % ", " \
+				.join(
+					subcomponent.get_exposed_dependencies()
+						.map(func(dependency): return dependency.get_name())
+				)
 		
 		return SidePanelDetailsItem.spawn(
 			subcomponent.get_name(),
@@ -143,13 +156,21 @@ class Module extends RefCounted:
 			if not coded_details_text.is_empty():
 				coded_details_text += "\n"
 			
-			coded_details_text += "~ used by %s" % ", ".join(module.get_dependent_components())
+			coded_details_text += "~ used by %s" % ", " \
+				.join(
+					module.get_dependent_components()
+						.map(func(component): return component.get_name())
+				)
 		
 		if not module.get_linked_subcomponents().is_empty():
 			if not coded_details_text.is_empty():
 				coded_details_text += "\n"
 			
-			coded_details_text += "~ links to %s" % ", ".join(module.get_linked_subcomponents())
+			coded_details_text += "~ links to %s" % ", " \
+				.join(
+					module.get_linked_subcomponents()
+						.map(func(subcomponent): return subcomponent.get_name())
+				)
 		
 		if not module.get_provisions().is_empty():
 			if not coded_details_text.is_empty():
@@ -159,10 +180,13 @@ class Module extends RefCounted:
 			
 			for provision in module.get_provisions():
 				coded_details_text += "\n\t~ %s%s depends on %s" % [
-					provision.get_name(),
-					"" if provision.get_scope().is_empty() \
-					else " (scoped to %s)" % provision.get_scope(),
-					", ".join(provision.get_dependencies())
+					provision.get_dependent().get_name(),
+					"" if not provision.get_scope() \
+					else " (scoped to %s)" % provision.get_scope().get_name(),
+					", ".join(
+						provision.get_dependencies()
+							.map(func(dependency): return dependency.get_name())
+					)
 				]
 		
 		return SidePanelDetailsItem.spawn(
@@ -173,16 +197,16 @@ class Module extends RefCounted:
 		)
 
 
-class ObjectType extends RefCounted:
+class Dependency extends RefCounted:
 	
 	static func spawn(
-		object: GodDaggerParsingResult.CompiledResult.ObjectType,
+		object: GodDaggerParsingResult.CompiledResult.Dependency,
 	) -> SidePanelDetailsItem:
 		
 		var coded_details_text := ""
 		
-		if not object.get_provision_module().is_empty():
-			coded_details_text += "~ provisioned by %s" % object.get_provision_module()
+		if object.get_provision_module():
+			coded_details_text += "~ provisioned by %s" % object.get_provision_module().get_name()
 		
 		if not coded_details_text.is_empty():
 			coded_details_text += "\n"
@@ -190,12 +214,16 @@ class ObjectType extends RefCounted:
 		if object.get_dependencies().is_empty():
 			coded_details_text += "~ independent"
 		else:
-			coded_details_text += "~ depends on %s" % ", ".join(object.get_dependencies())
+			coded_details_text += "~ depends on %s" % ", " \
+				.join(
+					object.get_dependencies()
+						.map(func(dependency): return dependency.get_name())
+				)
 		
-		if object.get_scope().is_empty():
+		if not object.get_scope():
 			coded_details_text += "\n~ unscoped"
 		else:
-			coded_details_text += "\n~ scoped to %s" % object.get_scope()
+			coded_details_text += "\n~ scoped to %s" % object.get_scope().get_name()
 		
 		return SidePanelDetailsItem.spawn(
 			object.get_name(),

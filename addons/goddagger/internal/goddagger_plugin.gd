@@ -2,7 +2,8 @@
 class_name GodDaggerPlugin extends EditorPlugin
 
 
-var _main_panel_scene_root_node: Node = null
+var _inspector_plugin: GodDaggerInspectorPlugin = null
+var _main_panel_scene_root_node: GodDaggerMainPanel = null
 
 
 func _get_plugin_name() -> String:
@@ -18,6 +19,10 @@ func _has_main_screen() -> bool:
 
 
 func _enter_tree() -> void:
+	if not _inspector_plugin:
+		_inspector_plugin = GodDaggerInspectorPlugin.new()
+		add_inspector_plugin(_inspector_plugin)
+	
 	if not _main_panel_scene_root_node:
 		var main_panel_scene := preload(GodDaggerViewConstants.MAIN_PANEL_SCENE_PATH)
 		_main_panel_scene_root_node = main_panel_scene.instantiate()
@@ -34,12 +39,17 @@ func _make_visible(visible: bool) -> void:
 func _exit_tree() -> void:
 	if _main_panel_scene_root_node:
 		_main_panel_scene_root_node.queue_free()
+		_main_panel_scene_root_node = null
+	
+	if _inspector_plugin:
+		remove_inspector_plugin(_inspector_plugin)
+		_inspector_plugin = null
 
 
 func _build() -> bool:
 	var parsing_result := GodDaggerComponentsParser \
 		._build_dependency_graph_by_parsing_project_files() \
-		.compile()
+		._compile()
 	
 	var parse_error := parsing_result.get_parse_error()
 	var has_parse_error := not parse_error.is_empty()
