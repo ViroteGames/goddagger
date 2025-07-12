@@ -4,14 +4,14 @@ class_name GodDaggerComponentsParser extends RefCounted
 static var _generated_components: GodDaggerGeneratedComponents
 
 
-static func get_components() -> GodDaggerGeneratedComponents:
+static func get_generated_component(component: String) -> GodDaggerGeneratedComponents:
 	var script_name := GodDaggerFileUtils._get_path_for_generated_script(
 		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
 	)
 	var generated_components: GodDaggerGeneratedComponents = load(script_name).new()
 	_generated_components = generated_components
 	
-	return _generated_components
+	return _generated_components.get_generated_component(component)
 
 
 static func _populate_component_objects_graph_by_parsing_arguments(
