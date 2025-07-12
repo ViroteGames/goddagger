@@ -65,6 +65,7 @@ static func _generate_dependencies_parameter_declarations(
 
 static func _generate_dependencies_argument_to_property_assignments(
 	dependencies: Array[GodDaggerParsingResult.CompiledResult.Dependency],
+	scope: GodDaggerParsingResult.CompiledResult.Scope,
 ) -> String:
 	
 	return _generate_dependencies_declarations_with_template(
@@ -72,7 +73,7 @@ static func _generate_dependencies_argument_to_property_assignments(
 		GodDaggerTemplates.GODDAGGER_DEPENDENCY_ARGUMENT_TO_PROPERTY_ASSIGNMENT_TEMPLATE,
 		"\n",
 		"\t\t",
-		"pass",
+		"" if scope else "pass",
 	)
 
 
@@ -103,6 +104,7 @@ static func _generate_dependency_providers_implementations_for_component(
 			generated_code += "\n\n"
 		
 		var provision_module := dependency.get_provision_module()
+		var scope := dependency.get_scope()
 		
 		if provision_module:
 			generated_code += GodDaggerTemplates \
@@ -115,12 +117,14 @@ static func _generate_dependency_providers_implementations_for_component(
 					GodDaggerTemplates.ARGUMENT_MODULE_PROVISION_METHOD,
 					provision_module.get_method_name(),
 				)
-			
+		
+		elif scope:
+			generated_code += GodDaggerTemplates \
+				.GODDAGGER_CONSTRUCTOR_INJECTED_SCOPED_DEPENDENCY_PROVIDER_TEMPLATE
+		
 		else:
 			generated_code += GodDaggerTemplates \
 				.GODDAGGER_CONSTRUCTOR_INJECTED_DEPENDENCY_PROVIDER_TEMPLATE
-		
-		var scope := dependency.get_scope()
 		
 		if scope:
 			generated_code = generated_code.replace(
@@ -153,6 +157,7 @@ static func _generate_dependency_providers_implementations_for_component(
 				GodDaggerTemplates.ASSIGN_DEPENDENCIES_ARGUMENTS_TO_PROPERTIES,
 				_generate_dependencies_argument_to_property_assignments(
 					dependency.get_dependencies(),
+					scope,
 				)
 			) \
 			.replace(
@@ -297,7 +302,11 @@ static func _generate_component_implementation(
 	return GodDaggerTemplates.GODDAGGER_COMPONENT_TEMPLATE \
 		.replace(
 			GodDaggerTemplates.ARGUMENT_COMPONENT_CLASS,
-			component.get_class(),
+			component.get_name(),
+		) \
+		.replace(
+			GodDaggerTemplates.ARGUMENT_COMPONENT_CLASS_SNAKE_CASE,
+			component.get_name().to_snake_case(),
 		) \
 		.replace(
 			GodDaggerTemplates.DECLARE_DEPENDENCIES_PROPERTIES,
@@ -347,6 +356,31 @@ static func _generate_components_implementations(
 	return generated_code
 
 
+static func _generate_generated_component_getter(
+	parsing_result: GodDaggerParsingResult.CompiledResult,
+) -> String:
+	
+	return GodDaggerTemplates.GODDAGGER_GENERATED_COMPONENT_GETTER_TEMPLATE \
+		.replace(
+			GodDaggerTemplates.DECLARE_COMPONENTS_RETURN_CONDITIONS,
+			"\n".join(
+				parsing_result.get_components() \
+				.map(
+					func (component: GodDaggerParsingResult.CompiledResult.Component): \
+						return GodDaggerTemplates.GODDAGGER_GENERATED_COMPONENT_GETTER_RETURN_CONDITION \
+							.replace(
+								GodDaggerTemplates.ARGUMENT_COMPONENT_CLASS,
+								component.get_name(),
+							) \
+							.replace(
+								GodDaggerTemplates.ARGUMENT_COMPONENT_CLASS_SNAKE_CASE,
+								component.get_name().to_snake_case(),
+							) \
+				)
+			)
+		)
+
+
 static func _conflate_empty_structures(generated_code: String) -> String:
 	
 	var conflate_empty_constructors = RegEx.new()
@@ -382,6 +416,10 @@ static func generate_code_implementing_components(
 		.replace(
 			GodDaggerTemplates.DECLARE_COMPONENTS,
 			_generate_components_implementations(parsing_result),
+		) \
+		.replace(
+			GodDaggerTemplates.DECLARE_GENERATED_COMPONENT_GETTER,
+			_generate_generated_component_getter(parsing_result),
 		) % randi() % 100000
 	
 	components_implementation_generated_code = _conflate_empty_structures(
@@ -389,11 +427,16 @@ static func generate_code_implementing_components(
 	)
 	
 	var did_generate_components_implementation := GodDaggerFileUtils \
+		#._generate_script_with_contents(
+			#"%s%s" % [
+				#GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
+				#randi() % 100000
+			#],
+			#components_implementation_generated_code,
+		#)
+		## TODO reconsider making the suffix of filename randomized again
 		._generate_script_with_contents(
-			"%s%s" % [
-				GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
-				randi() % 100000
-			],
+			GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
 			components_implementation_generated_code,
 		)
 	
