@@ -75,40 +75,6 @@ static func _read_file_lines(absolute_file_path: String) -> PackedStringArray:
 	return file_lines
 
 
-static func _clone_script_into_generated_directory_renaming_class_name_and_constructor(
-	object_class_name: String,
-	absolute_file_path: String,
-	cloned_file_name: String,
-) -> bool:
-	
-	var file_lines := _read_file_lines(absolute_file_path)
-	
-	for file_line_index in file_lines.size():
-		var class_name_pattern := "%s %s" % [
-			GodDaggerConstants.KEYWORD_CLASS_NAME,
-			object_class_name,
-		]
-		var renamed_class_name_pattern := "%s %s%s%s" % [
-			GodDaggerConstants.KEYWORD_CLASS_NAME,
-			GodDaggerConstants.GENERATED_GODDAGGER_TOKEN_PREFIX,
-			object_class_name,
-			randi() % 100000,
-		]
-		
-		if file_lines[file_line_index].contains(class_name_pattern):
-			file_lines[file_line_index] = file_lines[file_line_index] \
-				.replace(class_name_pattern, renamed_class_name_pattern)
-		
-		var regular_constructor_pattern := "%s(" % GodDaggerConstants.CONSTRUCTOR_NAME
-		var renamed_constructor_pattern := "%s(" % GodDaggerConstants.RENAMED_CONSTRUCTOR_NAME
-		
-		if file_lines[file_line_index].contains(regular_constructor_pattern):
-			file_lines[file_line_index] = file_lines[file_line_index] \
-				.replace(regular_constructor_pattern, renamed_constructor_pattern)
-	
-	return _generate_script_with_contents(cloned_file_name, "\n".join(file_lines))
-
-
 static func _iterate_through_directory_recursively_and_do(
 	operation_for_each_file: Callable,
 ) -> void:
