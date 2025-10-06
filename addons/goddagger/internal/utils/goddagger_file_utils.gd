@@ -59,8 +59,14 @@ static func _clear_generated_files() -> bool:
 			DirAccess.remove_absolute(absolute_file_path),
 	)
 	
-	var clear_successful := DirAccess.remove_absolute(GENERATED_PATH) == OK
+	var clear_result: Error
+	match OS.get_name():
+		"Windows":
+			clear_result = OS.move_to_trash(ProjectSettings.globalize_path(GENERATED_PATH))
+		_:
+			clear_result = DirAccess.remove_absolute(GENERATED_PATH)
 	
+	var clear_successful := clear_result == OK
 	assert(
 		clear_successful,
 		"Couldn't clear dedicated folder for generated scripts at %s." % GENERATED_PATH,
