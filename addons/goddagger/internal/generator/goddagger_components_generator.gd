@@ -427,14 +427,6 @@ static func generate_code_implementing_components(
 	)
 	
 	var did_generate_components_implementation := GodDaggerFileUtils \
-		#._generate_script_with_contents(
-			#"%s%s" % [
-				#GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
-				#randi() % 100000
-			#],
-			#components_implementation_generated_code,
-		#)
-		## TODO reconsider making the suffix of filename randomized again
 		._generate_script_with_contents(
 			GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
 			components_implementation_generated_code,

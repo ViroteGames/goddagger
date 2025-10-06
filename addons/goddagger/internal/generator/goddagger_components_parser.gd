@@ -84,31 +84,24 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 	if GodDaggerFileUtils._is_file_an_interface(resolved_file_path):
 		return
 	
-	error_message = error_message + (" @%s." % resolved_file_path)
+	var loaded_resource: GDScript = ResourceLoader.load(resolved_file_path)
+	var argument_count := loaded_resource.get_method_argument_count(
+		GodDaggerConstants.CONSTRUCTOR_NAME,
+	)
+	var null_arguments_array = []
+	null_arguments_array.resize(argument_count)
 	
-	var cloned_file_name := object_class_name.to_snake_case() + "%s" % [randi() % 100000]
-	
-	var cloned_object_script := GodDaggerFileUtils \
-		._clone_script_into_generated_directory_renaming_class_name_and_constructor(
-			object_class_name,
-			resolved_file_path,
-			cloned_file_name,
-		)
-	
-	assert(
-		cloned_object_script,
-		"%s (at clone + constructor rename step)" % error_message,
+	var loaded_script: Object = loaded_resource.callv(
+		GodDaggerConstants.CONSTRUCTOR_INVOCATION_NAME,
+		null_arguments_array
 	)
 	
-	var cloned_file_path := GodDaggerFileUtils._get_path_for_generated_script(cloned_file_name)
-	
-	var loaded_script: Object = load(cloned_file_path).new()
 	var methods := loaded_script.get_method_list()
 	
 	for method in methods:
 		var method_name: String = method[GodDaggerConstants.KEY_METHOD_NAME]
 		
-		if method_name == GodDaggerConstants.RENAMED_CONSTRUCTOR_NAME:
+		if method_name == GodDaggerConstants.CONSTRUCTOR_NAME:
 			var constructor_arguments: Array[Dictionary] = \
 				method[GodDaggerConstants.KEY_METHOD_ARGUMENTS]
 			
@@ -468,16 +461,3 @@ static func get_parsing_result_error(error: String) -> GodDaggerParsingResult.Co
 	return GodDaggerParsingResult \
 		.new(component_relationships_graph, components_to_objects_graphs, error) \
 		._compile()
-	
-	#var serialized_parsing_result := GodDaggerTemplates.GODDAGGER_PARSING_RESULT_TEMPLATE % [
-		#component_relationships_graph.serialize(),
-		#GodDaggerGraph.serialize_dictionary(components_to_objects_graphs),
-	#]
-	#
-	#var did_generate_parsing_result := GodDaggerFileUtils \
-		#._generate_script_with_contents(
-			#GodDaggerConstants.GODDAGGER_GENERATED_PARSING_RESULT_FILE_NAME,
-			#serialized_parsing_result,
-		#)
-	#
-	#print("Parsing Result: %s" % serialized_parsing_result)
