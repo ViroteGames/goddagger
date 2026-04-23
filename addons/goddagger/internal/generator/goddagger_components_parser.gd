@@ -8,7 +8,10 @@ static func get_generated_component(component: String) -> GodDaggerGeneratedComp
 	var script_name := GodDaggerFileUtils._get_path_for_generated_script(
 		GodDaggerConstants.GODDAGGER_GENERATED_COMPONENTS_FILE_NAME,
 	)
-	var generated_components: GodDaggerGeneratedComponents = load(script_name).new()
+	var script_resource: GDScript = ResourceLoader.load(
+		script_name, "GDScript", ResourceLoader.CacheMode.CACHE_MODE_IGNORE_DEEP,
+	)
+	var generated_components: GodDaggerGeneratedComponents = script_resource.new()
 	_generated_components = generated_components
 	
 	return _generated_components.get_generated_component(component)
@@ -84,7 +87,9 @@ static func _populate_component_objects_graph_by_parsing_object_constructor(
 	if GodDaggerFileUtils._is_file_an_interface(resolved_file_path):
 		return
 	
-	var loaded_resource: GDScript = ResourceLoader.load(resolved_file_path)
+	var loaded_resource: GDScript = ResourceLoader.load(
+		resolved_file_path, "GDScript", ResourceLoader.CacheMode.CACHE_MODE_IGNORE_DEEP,
+	)
 	var argument_count := loaded_resource.get_method_argument_count(
 		GodDaggerConstants.CONSTRUCTOR_NAME,
 	)
@@ -197,7 +202,10 @@ static func _populate_component_objects_graph_by_parsing_module_property(
 				components_to_objects_graphs[subcomponent_class_name] = \
 					component_objects_graph.fork("%s's Object Graph" % subcomponent_class_name)
 				
-				var loaded_script: GodDaggerSubcomponent = load(resolved_file_path).new()
+				var script_resource: GDScript = ResourceLoader.load(
+					resolved_file_path, "GDScript", ResourceLoader.CacheMode.CACHE_MODE_IGNORE_DEEP,
+				)
+				var loaded_script: GodDaggerSubcomponent = script_resource.new()
 				
 				var methods := loaded_script.get_method_list()
 				
@@ -238,7 +246,10 @@ static func _populate_component_objects_graph_by_parsing_module(
 		if module_class.get_resolved_class_name() == module_class_name:
 			var resolved_file_path := module_class.get_resolved_file_path()
 			
-			var loaded_script: Object = load(resolved_file_path).new()
+			var script_resource: GDScript = ResourceLoader.load(
+				resolved_file_path, "GDScript", ResourceLoader.CacheMode.CACHE_MODE_IGNORE_DEEP,
+			)
+			var loaded_script: Object = script_resource.new()
 			var methods := loaded_script.get_method_list()
 			
 			for method in methods:
@@ -425,7 +436,10 @@ static func _build_dependency_graph_by_parsing_project_files(
 		components_to_objects_graphs[resolved_class_name] = \
 			GodDaggerGraph.new("%s's Object Graph" % resolved_class_name)
 		
-		var loaded_script: GodDaggerComponent = load(resolved_file_path).new()
+		var script_resource: GDScript = ResourceLoader.load(
+			resolved_file_path, "GDScript", ResourceLoader.CacheMode.CACHE_MODE_IGNORE_DEEP,
+		)
+		var loaded_script: GodDaggerComponent = script_resource.new()
 		
 		var methods := loaded_script.get_method_list()
 		_populate_component_objects_graph_scope_by_parsing_component_methods(
